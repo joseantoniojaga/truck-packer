@@ -84,8 +84,8 @@ function fullPack(items, trailer) {
 }
 
 // --- Three.js 3D Viewer ---
-function Viewer3D({placed,selId}){
-  const mRef=useRef(null);const st=useRef({th:Math.PI/4,ph:Math.PI/3,r:1400,dr:false,lx:0,ly:0});
+function Viewer3D({placed,selId,stRef,onZoomIn,onZoomOut}){
+  const mRef=useRef(null);const st=stRef;
   const R=useRef({s:null,c:null,r:null,f:null});
   useEffect(()=>{
     const el=mRef.current;if(!el)return;const W=el.clientWidth,H=Math.round(W*0.65);
@@ -122,7 +122,16 @@ function Viewer3D({placed,selId}){
       m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:p.color})));s.add(m);
     }
   },[placed,selId]);
-  return <div ref={mRef} style={{width:"100%",borderRadius:6,overflow:"hidden"}}/>;
+  const BZ={width:32,height:32,borderRadius:"50%",background:"#1E293B",border:"1px solid #334155",color:"#fff",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,lineHeight:1};
+  return(
+    <div style={{position:"relative",width:"100%",borderRadius:6,overflow:"hidden"}}>
+      <div ref={mRef} style={{width:"100%"}}/>
+      <div style={{position:"absolute",bottom:8,right:8,display:"flex",gap:6}}>
+        <button onClick={onZoomIn} style={BZ}>+</button>
+        <button onClick={onZoomOut} style={BZ}>−</button>
+      </div>
+    </div>
+  );
 }
 
 // --- 2D View ---
@@ -177,6 +186,17 @@ export default function App(){
   const [showStrats,setSS]=useState(false);
   const [computing,setComp]=useState(false);
   const [conflict,setConflict]=useState(null);
+
+  useEffect(()=>{
+    document.body.style.background="#0B1121";
+    document.body.style.margin="0";
+    document.body.style.padding="0";
+    document.documentElement.style.background="#0B1121";
+  },[]);
+
+  const stRef=useRef({th:Math.PI/4,ph:Math.PI/3,r:1400,dr:false,lx:0,ly:0});
+  const onZoomIn=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r-200));};
+  const onZoomOut=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r+200));};
 
   const pkC=useMemo(()=>getCounts(placed),[placed]);
   const volL=placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
@@ -368,7 +388,7 @@ export default function App(){
           </div>
 
           {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={placed} selId={selId}/>}
+            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut}/>}
             <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
           </div>)}
           {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,overflowY:"auto"}}>
