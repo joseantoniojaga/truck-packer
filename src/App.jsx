@@ -57,8 +57,8 @@ function supportRatio(x, y, l, w, z, placed) {
 // Find best position for one item; items sit at z=0 or on top of others
 function findBestPos(dims, placed, trailer, mode="backToFront") {
   const rs = getRots(...dims);
-  const xs = [...new Set([0, ...placed.map(p => p.x + p.l)])];
-  const ys = [...new Set([0, ...placed.map(p => p.y + p.w)])];
+  const xs = [...new Set([0, ...placed.flatMap(p => [p.x, p.x + p.l])])];
+  const ys = [...new Set([0, ...placed.flatMap(p => [p.y, p.y + p.w])])];
   let best = null;
   for (const rot of rs) {
     for (const x of xs) {
@@ -205,6 +205,8 @@ export default function App(){
   const [computing,setComp]=useState(false);
   const [conflict,setConflict]=useState(null);
   const [packMode,setPackMode]=useState("backToFront");
+  const [modeSwitchTarget,setModeSwitchTarget]=useState(null);
+  const [pendingStrat,setPendingStrat]=useState(null);
 
   useEffect(()=>{
     document.body.style.background="#0B1121";
@@ -269,7 +271,8 @@ export default function App(){
     doRepack(ni);
   },[items,doRepack]);
 
-  const handleStrat=(k)=>{setComp(true);setTimeout(()=>{const r=applyStrat(k,items);doRepack(r);setSS(false);setComp(false);},50);};
+  const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=applyStrat(k,items);doRepack(r);setSS(false);setComp(false);},50);};
+  const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
 
   const sel=selId?items.find(a=>a.id===selId):null;
   const selVol=sel?sel.ancho*sel.alto*sel.fondo:0;
@@ -310,6 +313,34 @@ export default function App(){
         </div>
       )}
 
+      {/* MODE SWITCH CONFIRM */}
+      {modeSwitchTarget&&(
+        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>⚠ Cambiar modo de acomodo</div>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Sí, cambiar</button>
+              <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STRATEGY CONFIRM */}
+      {pendingStrat&&(
+        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🧠 Aplicar estrategia</div>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+              <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── HEADER (ancho completo) ── */}
       <div className="tp-header">
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
@@ -337,8 +368,8 @@ export default function App(){
           </div>
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>{if(placed.length>0){if(!window.confirm("Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?"))return;setItems(items.map(it=>({...it,load:0})));setPlaced([]);}setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
-            <button onClick={()=>{if(placed.length>0){if(!window.confirm("Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?"))return;setItems(items.map(it=>({...it,load:0})));setPlaced([]);}setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
           </div>
 
           <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
