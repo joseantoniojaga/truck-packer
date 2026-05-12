@@ -1,25 +1,11 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { findBestPos, fullPack } from './packingUtils.js';
+import { findBestPos, fullPack, fmtV, getCounts } from './packing.js';
+import { FURNITURE } from './furniture.js';
 
 const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
 const TV = TR.largo*TR.ancho*TR.alto;
 const MIN = 5;
-
-const INIT = [
-  { id:1,name:"Tocador Boston",inv:16,ancho:122.5,alto:89.5,fondo:42,color:"#E07A5F" },
-  { id:2,name:"Portaluna Habana",inv:28,ancho:81,alto:172,fondo:7.5,color:"#7B9ACC" },
-  { id:3,name:"Cabecera Hampton",inv:38,ancho:143,alto:9,fondo:151,color:"#81B29A" },
-  { id:4,name:"Buró Hampton",inv:32,ancho:65,alto:65,fondo:40,color:"#F2CC8F" },
-  { id:5,name:"Base Ind. Cielo",inv:12,ancho:99,alto:30.5,fondo:191,color:"#6A994E" },
-  { id:6,name:"Base Mat. Cielo",inv:10,ancho:136.5,alto:30.5,fondo:191,color:"#A7C957" },
-  { id:7,name:"Base Ind. Sierra",inv:25,ancho:99.5,alto:36,fondo:199.5,color:"#BC4749" },
-  { id:8,name:"Base Mat. Sierra",inv:32,ancho:137,alto:36,fondo:199.5,color:"#9B5DE5" },
-  { id:9,name:"Base Queen Sierra",inv:34,ancho:150,alto:36,fondo:199.5,color:"#0F4C5C" },
-];
-
-function fmtV(c){return c>=1e6?(c/1e6).toFixed(2)+" m³":Math.round(c).toLocaleString("es-MX")+" cm³";}
-function getCounts(p){const m={};for(const x of p)m[x.id]=(m[x.id]||0)+1;return m;}
 
 
 // --- Three.js 3D Viewer ---
@@ -117,7 +103,7 @@ function applyStrat(key,items){
 }
 
 export default function App(){
-  const [items,setItems]=useState(INIT.map(it=>({...it,load:0})));
+  const [items,setItems]=useState(FURNITURE.map(it=>({...it,load:0})));
   const [placed,setPlaced]=useState([]);
   const [selId,setSelId]=useState(null);
   const [viewMode,setVM]=useState("3d");
