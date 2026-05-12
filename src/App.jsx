@@ -128,7 +128,7 @@ function Viewer3D({placed,selId}){
 // --- 2D View ---
 function OV({placed,vk,selId,onSel}){
   const gc=(p)=>{const L=TR.largo,W=TR.ancho,H=TR.alto;switch(vk){case"top":return{x:p.x/L*100,y:p.y/W*100,w:p.l/L*100,h:p.w/W*100};case"bottom":return{x:p.x/L*100,y:(W-p.y-p.w)/W*100,w:p.l/L*100,h:p.w/W*100};case"front":return{x:p.y/W*100,y:(H-p.z-p.h)/H*100,w:p.w/W*100,h:p.h/H*100};case"back":return{x:(W-p.y-p.w)/W*100,y:(H-p.z-p.h)/H*100,w:p.w/W*100,h:p.h/H*100};case"right":return{x:p.x/L*100,y:(H-p.z-p.h)/H*100,w:p.l/L*100,h:p.h/H*100};case"left":return{x:(L-p.x-p.l)/L*100,y:(H-p.z-p.h)/H*100,w:p.l/L*100,h:p.h/H*100};default:return{x:0,y:0,w:0,h:0};}};
-  const a={top:25,bottom:25,front:115,back:115,right:20,left:20};
+  const a={top:25,bottom:25,front:80,back:80,right:20,left:20};
   const lb={top:"Superior",bottom:"Inferior",front:"Frontal",back:"Trasera",right:"Derecha",left:"Izquierda"};
   let list=placed;
   if(vk==="front")list=placed.filter(p=>p.x<TR.largo*0.06);if(vk==="back")list=placed.filter(p=>p.x+p.l>TR.largo*0.94);
@@ -235,15 +235,18 @@ export default function App(){
   const B={borderRadius:5,border:"1px solid #334155",background:"#0F172A",cursor:"pointer",fontFamily:"DM Sans",fontWeight:600};
 
   return(
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:"#0B1121",color:"#E8E6DF",minHeight:"100vh",padding:"12px",position:"relative",boxSizing:"border-box"}}>
+    <div className="tp-root" style={{fontFamily:"'DM Sans',sans-serif",background:"#0B1121",color:"#E8E6DF",position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
       <style>{`
-        .tp-layout{display:flex;gap:12px;align-items:flex-start;}
-        .tp-left{width:40%;overflow-y:auto;max-height:calc(100vh - 24px);position:sticky;top:12px;}
-        .tp-right{width:60%;}
+        .tp-root{height:100vh;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;}
+        .tp-header{flex-shrink:0;margin-bottom:10px;}
+        .tp-cols{display:flex;gap:12px;flex:1;min-height:0;overflow:hidden;}
+        .tp-left{width:35%;overflow-y:auto;flex-shrink:0;}
+        .tp-right{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
         @media(max-width:768px){
-          .tp-layout{flex-direction:column;}
-          .tp-left,.tp-right{width:100%;max-height:none;position:static;overflow-y:visible;}
+          .tp-root{height:auto;min-height:100vh;overflow:visible;}
+          .tp-cols{flex-direction:column;flex:none;overflow:visible;}
+          .tp-left,.tp-right{width:100%;overflow:visible;}
         }
       `}</style>
 
@@ -266,17 +269,22 @@ export default function App(){
         </div>
       )}
 
-      <div className="tp-layout">
+      {/* ── HEADER (ancho completo) ── */}
+      <div className="tp-header">
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+          <span style={{fontSize:20}}>🚛</span>
+          <h1 style={{margin:0,fontSize:17,fontWeight:700,color:"#F8FAFC"}}>Calculadora de Carga</h1>
+        </div>
+        <p style={{margin:0,fontSize:10,color:"#64748B"}}>Tráiler 16.15m × 2.47m × 2.80m · {TR.placas} · {fmtV(TV)}</p>
+      </div>
 
-        {/* ── LEFT PANEL: controles ── */}
+      {/* ── DOS COLUMNAS ── */}
+      <div className="tp-cols">
+
+        {/* ── IZQUIERDA: controles (35%) ── */}
         <div className="tp-left">
 
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-            <span style={{fontSize:20}}>🚛</span><h1 style={{margin:0,fontSize:17,fontWeight:700,color:"#F8FAFC"}}>Calculadora de Carga</h1>
-          </div>
-          <p style={{margin:"0 0 12px",fontSize:10,color:"#64748B"}}>Tráiler 16.15m × 2.47m × 2.80m · {TR.placas} · {fmtV(TV)}</p>
-
-          <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
+          <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:10}}>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5}}>
               <span style={{color:"#94A3B8"}}>📦 {placed.length} colocadas / {tLoad} pedidas</span>
               <span style={{fontFamily:"JetBrains Mono",fontWeight:600,color:util>85?"#EF4444":util>60?"#F59E0B":"#34D399"}}>{util.toFixed(1)}%</span>
@@ -287,25 +295,25 @@ export default function App(){
             <div style={{fontSize:10,color:"#64748B",marginTop:4,textAlign:"right"}}>{fmtV(volL)} / {fmtV(TV)}</div>
           </div>
 
-          <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"9px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
+          <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
             {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
           </button>
           {showStrats&&(
-            <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12,border:"1px solid #F59E0B22"}}>
+            <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:10,border:"1px solid #F59E0B22"}}>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {STRATS.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"10px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
-                  <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:12,color:"#F8FAFC",fontWeight:600}}>{s.label}</div><div style={{fontSize:10,color:"#64748B",fontWeight:400,marginTop:2}}>{s.desc}</div></div>
+                {STRATS.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"8px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
+                  <span style={{fontSize:16,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:11,color:"#F8FAFC",fontWeight:600}}>{s.label}</div><div style={{fontSize:9,color:"#64748B",fontWeight:400,marginTop:1}}>{s.desc}</div></div>
                 </button>))}
               </div>
             </div>
           )}
 
-          {sel&&(<div style={{background:`${sel.color}12`,border:`1px solid ${sel.color}33`,borderRadius:8,padding:10,marginBottom:12}}>
+          {sel&&(<div style={{background:`${sel.color}12`,border:`1px solid ${sel.color}33`,borderRadius:8,padding:10,marginBottom:10}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:13,fontWeight:700,color:sel.color}}>{sel.name}</span>
-              <button onClick={()=>setSelId(null)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:15}}>✕</button>
+              <span style={{fontSize:12,fontWeight:700,color:sel.color}}>{sel.name}</span>
+              <button onClick={()=>setSelId(null)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:14}}>✕</button>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:11,color:"#94A3B8"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:10,color:"#94A3B8"}}>
               <span>Medidas: <b style={{color:"#E8E6DF"}}>{sel.ancho}×{sel.alto}×{sel.fondo}cm</b></span>
               <span>Vol: <b style={{color:"#E8E6DF"}}>{fmtV(selVol)}</b></span>
               <span>Inventario: <b style={{color:"#E8E6DF"}}>{sel.inv}</b></span>
@@ -318,8 +326,8 @@ export default function App(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:12,fontWeight:600,color:"#F8FAFC"}}>Muebles</span>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"4px 8px",fontSize:10,color:editMode?"#F59E0B":"#94A3B8"}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
-                <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"4px 8px",fontSize:10,color:"#EF4444"}}>Todos a 0</button>
+                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?"#F59E0B":"#94A3B8"}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
+                <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:"#EF4444"}}>Todos a 0</button>
               </div>
             </div>
             <div style={{display:"flex",gap:8,marginBottom:6,padding:"4px 8px",background:"#0F172A",borderRadius:5,fontSize:9,color:"#64748B"}}>
@@ -327,9 +335,9 @@ export default function App(){
               :<><span style={{fontFamily:"JetBrains Mono",color:"#34D399"}}>colocadas</span><span>/</span><span style={{fontFamily:"JetBrains Mono",color:"#E8E6DF"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
             </div>
             {items.map(a=>{const pk=pkC[a.id]||0;
-              return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 8px",marginBottom:4,background:selId===a.id?"#0F172A":"#13192A",borderRadius:6,cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
-                <div style={{width:5,height:26,borderRadius:3,background:a.color,flexShrink:0}}/>
-                <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:500,color:"#F8FAFC",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
+              return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",marginBottom:3,background:selId===a.id?"#0F172A":"#13192A",borderRadius:6,cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
+                <div style={{width:4,height:24,borderRadius:3,background:a.color,flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:500,color:"#F8FAFC",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
                   <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
                 {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?"#34D399":"#F59E0B",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -345,25 +353,25 @@ export default function App(){
             })}
           </div>
 
-          <div style={{marginTop:12,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:"#94A3B8",lineHeight:1.5}}>
+          <div style={{marginTop:10,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:"#94A3B8",lineHeight:1.5}}>
             <span style={{fontWeight:600,color:"#CBD5E1"}}>💡</span> <b>+ es incremental:</b> busca el mejor hueco sin mover nada. <b>−</b> quita el último y reorganiza. Las estrategias reorganizan todo para optimizar.
           </div>
 
         </div>{/* end left */}
 
-        {/* ── RIGHT PANEL: visual ── */}
+        {/* ── DERECHA: visual (65%) ── */}
         <div className="tp-right">
 
-          <div style={{display:"flex",gap:3,marginBottom:8}}>
+          <div style={{display:"flex",gap:3,marginBottom:8,flexShrink:0}}>
             <button onClick={()=>setVM("3d")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="3d"?"#06B6D4":"#1E293B",color:viewMode==="3d"?"#0B1121":"#64748B"}}>🧊 3D</button>
             <button onClick={()=>setVM("grid")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="grid"?"#06B6D4":"#1E293B",color:viewMode==="grid"?"#0B1121":"#64748B"}}>⊞ 6 Vistas</button>
           </div>
 
-          {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
+          {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
             {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={placed} selId={selId}/>}
-            <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center"}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
+            <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
           </div>)}
-          {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
+          {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,overflowY:"auto"}}>
             {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["top","bottom","right","left","front","back"].map(vk=>(<OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId}/>))}</div>)}
           </div>)}
