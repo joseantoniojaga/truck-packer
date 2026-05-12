@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
+import { findBestPos, fullPack } from './packingUtils.js';
 
 const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
 const TV = TR.largo*TR.ancho*TR.alto;
@@ -20,86 +21,6 @@ const INIT = [
 function fmtV(c){return c>=1e6?(c/1e6).toFixed(2)+" m³":Math.round(c).toLocaleString("es-MX")+" cm³";}
 function getCounts(p){const m={};for(const x of p)m[x.id]=(m[x.id]||0)+1;return m;}
 
-function getRots(a,b,c){
-  const s=new Set(),r=[];const d=[a,b,c];
-  for(const p of[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]]){
-    const k=`${d[p[0]]}-${d[p[1]]}-${d[p[2]]}`;
-    if(!s.has(k)){s.add(k);r.push({l:d[p[0]],w:d[p[1]],h:d[p[2]]});}
-  }return r;
-}
-
-// Returns the max occupied Z in the footprint (x,y,l,w) — where the next item sits
-function hmapGetZ(x, y, l, w, placed) {
-  let maxZ = 0;
-  for (const p of placed) {
-    if (Math.min(x+l, p.x+p.l) - Math.max(x, p.x) > 0.1 &&
-        Math.min(y+w, p.y+p.w) - Math.max(y, p.y) > 0.1) {
-      if (p.z + p.h > maxZ) maxZ = p.z + p.h;
-    }
-  }
-  return maxZ;
-}
-
-// Fraction of the item footprint (x,y,l,w) supported by items whose top is at z
-function supportRatio(x, y, l, w, z, placed) {
-  if (z < 1) return 1;
-  let supported = 0;
-  const area = l * w;
-  for (const p of placed) {
-    if (Math.abs(p.z + p.h - z) > 2) continue;
-    const ox = Math.max(0, Math.min(x+l, p.x+p.l) - Math.max(x, p.x));
-    const oy = Math.max(0, Math.min(y+w, p.y+p.w) - Math.max(y, p.y));
-    supported += ox * oy;
-  }
-  return area > 0 ? supported / area : 0;
-}
-
-// Find best position for one item; items sit at z=0 or on top of others
-function findBestPos(dims, placed, trailer, mode="backToFront") {
-  const rs = getRots(...dims);
-  const xs = [...new Set([0, ...placed.flatMap(p => [p.x, p.x + p.l])])];
-  const ys = [...new Set([0, ...placed.flatMap(p => [p.y, p.y + p.w])])];
-  let best = null;
-  for (const rot of rs) {
-    for (const x of xs) {
-      if (x + rot.l > trailer.largo + 0.1) continue;
-      for (const y of ys) {
-        if (y + rot.w > trailer.ancho + 0.1) continue;
-        const z = hmapGetZ(x, y, rot.l, rot.w, placed);
-        if (z + rot.h > trailer.alto + 0.1) continue;
-        if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
-        // backToFront: x es prioridad absoluta (llena sección completa antes de avanzar)
-        // free: x pesa poco (puede avanzar si hay mejor hueco más adelante)
-        const score = mode === "backToFront"
-          ? x * 1e8 + z * 1e4 + y
-          : z * 1e6 + x * 1e3 + y;
-        if (!best || score < best.score) {
-          best = {x, y, z, l: rot.l, w: rot.w, h: rot.h, score};
-        }
-      }
-    }
-  }
-  return best;
-}
-
-// Full repack from scratch (for strategies, removals, reset)
-function fullPack(items, trailer, mode="backToFront") {
-  const placed = [];
-  const types = [...items].filter(it => it.load > 0)
-    .map(it => ({...it, vol: it.ancho * it.alto * it.fondo}))
-    .sort((a, b) => b.vol - a.vol || a.id - b.id);
-  for (const type of types) {
-    let rem = type.load;
-    while (rem > 0) {
-      const pos = findBestPos([type.ancho, type.alto, type.fondo], placed, trailer, mode);
-      if (!pos) break;
-      placed.push({id: type.id, name: type.name, color: type.color,
-        x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h});
-      rem--;
-    }
-  }
-  return {placed};
-}
 
 // --- Three.js 3D Viewer ---
 function Viewer3D({placed,selId,stRef,onZoomIn,onZoomOut}){
@@ -230,7 +151,7 @@ export default function App(){
   const addOne=useCallback((id)=>{
     const it=items.find(x=>x.id===id);
     if(!it||it.load>=it.inv)return;
-    const pos=findBestPos([it.ancho,it.alto,it.fondo],placed,TR,packMode);
+    const pos=findBestPos([it.ancho,it.alto,it.fondo],placed,TR,packMode,it.id);
     if(!pos){setPendingAdd({id,itemName:it.name});return;}
     const newItem={id:it.id,name:it.name,color:it.color,x:pos.x,y:pos.y,z:pos.z,l:pos.l,w:pos.w,h:pos.h};
     setItems(items.map(x=>x.id===id?{...x,load:x.load+1}:x));
