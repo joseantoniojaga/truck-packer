@@ -235,8 +235,17 @@ export default function App(){
   const B={borderRadius:5,border:"1px solid #334155",background:"#0F172A",cursor:"pointer",fontFamily:"DM Sans",fontWeight:600};
 
   return(
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:"#0B1121",color:"#E8E6DF",minHeight:"100vh",padding:"12px",position:"relative"}}>
+    <div style={{fontFamily:"'DM Sans',sans-serif",background:"#0B1121",color:"#E8E6DF",minHeight:"100vh",padding:"12px",position:"relative",boxSizing:"border-box"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+      <style>{`
+        .tp-layout{display:flex;gap:12px;align-items:flex-start;}
+        .tp-left{width:40%;overflow-y:auto;max-height:calc(100vh - 24px);position:sticky;top:12px;}
+        .tp-right{width:60%;}
+        @media(max-width:768px){
+          .tp-layout{flex-direction:column;}
+          .tp-left,.tp-right{width:100%;max-height:none;position:static;overflow-y:visible;}
+        }
+      `}</style>
 
       {/* CONFLICT */}
       {conflict&&(
@@ -257,95 +266,110 @@ export default function App(){
         </div>
       )}
 
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-        <span style={{fontSize:20}}>🚛</span><h1 style={{margin:0,fontSize:17,fontWeight:700,color:"#F8FAFC"}}>Calculadora de Carga</h1>
-      </div>
-      <p style={{margin:"0 0 12px",fontSize:10,color:"#64748B"}}>Tráiler 16.15m × 2.47m × 2.80m · {TR.placas} · {fmtV(TV)}</p>
+      <div className="tp-layout">
 
-      <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5}}>
-          <span style={{color:"#94A3B8"}}>📦 {placed.length} colocadas / {tLoad} pedidas</span>
-          <span style={{fontFamily:"JetBrains Mono",fontWeight:600,color:util>85?"#EF4444":util>60?"#F59E0B":"#34D399"}}>{util.toFixed(1)}%</span>
-        </div>
-        <div style={{background:"#0F172A",borderRadius:5,height:18,overflow:"hidden"}}>
-          <div style={{width:`${Math.min(util,100)}%`,height:"100%",background:util>85?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#06B6D4,#34D399)",borderRadius:5,transition:"width 0.4s"}}/>
-        </div>
-        <div style={{fontSize:10,color:"#64748B",marginTop:4,textAlign:"right"}}>{fmtV(volL)} / {fmtV(TV)}</div>
-      </div>
+        {/* ── LEFT PANEL: controles ── */}
+        <div className="tp-left">
 
-      <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"9px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
-        {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
-      </button>
-      {showStrats&&(
-        <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12,border:"1px solid #F59E0B22"}}>
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {STRATS.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"10px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
-              <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:12,color:"#F8FAFC",fontWeight:600}}>{s.label}</div><div style={{fontSize:10,color:"#64748B",fontWeight:400,marginTop:2}}>{s.desc}</div></div>
-            </button>))}
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <span style={{fontSize:20}}>🚛</span><h1 style={{margin:0,fontSize:17,fontWeight:700,color:"#F8FAFC"}}>Calculadora de Carga</h1>
           </div>
-        </div>
-      )}
+          <p style={{margin:"0 0 12px",fontSize:10,color:"#64748B"}}>Tráiler 16.15m × 2.47m × 2.80m · {TR.placas} · {fmtV(TV)}</p>
 
-      <div style={{display:"flex",gap:3,marginBottom:8}}>
-        <button onClick={()=>setVM("3d")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="3d"?"#06B6D4":"#1E293B",color:viewMode==="3d"?"#0B1121":"#64748B"}}>🧊 3D</button>
-        <button onClick={()=>setVM("grid")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="grid"?"#06B6D4":"#1E293B",color:viewMode==="grid"?"#0B1121":"#64748B"}}>⊞ 6 Vistas</button>
-      </div>
-
-      {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
-        {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={placed} selId={selId}/>}
-        <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center"}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
-      </div>)}
-      {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
-        {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["top","bottom","right","left","front","back"].map(vk=>(<OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId}/>))}</div>)}
-      </div>)}
-
-      {sel&&(<div style={{background:`${sel.color}12`,border:`1px solid ${sel.color}33`,borderRadius:8,padding:10,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:13,fontWeight:700,color:sel.color}}>{sel.name}</span>
-          <button onClick={()=>setSelId(null)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:15}}>✕</button>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:11,color:"#94A3B8"}}>
-          <span>Medidas: <b style={{color:"#E8E6DF"}}>{sel.ancho}×{sel.alto}×{sel.fondo}cm</b></span>
-          <span>Vol: <b style={{color:"#E8E6DF"}}>{fmtV(selVol)}</b></span>
-          <span>Inventario: <b style={{color:"#E8E6DF"}}>{sel.inv}</b></span>
-          <span>A cargar: <b style={{color:"#06B6D4"}}>{sel.load}</b></span>
-          <span>Colocadas: <b style={{color:(pkC[sel.id]||0)>=sel.load?"#34D399":"#F59E0B"}}>{pkC[sel.id]||0}</b></span>
-        </div>
-      </div>)}
-
-      <div style={{background:"#1E293B",borderRadius:8,padding:10}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-          <span style={{fontSize:12,fontWeight:600,color:"#F8FAFC"}}>Muebles</span>
-          <div style={{display:"flex",gap:4}}>
-            <button onClick={()=>setEM(!editMode)} style={{...B,padding:"4px 8px",fontSize:10,color:editMode?"#F59E0B":"#94A3B8"}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
-            <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"4px 8px",fontSize:10,color:"#EF4444"}}>Todos a 0</button>
+          <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5}}>
+              <span style={{color:"#94A3B8"}}>📦 {placed.length} colocadas / {tLoad} pedidas</span>
+              <span style={{fontFamily:"JetBrains Mono",fontWeight:600,color:util>85?"#EF4444":util>60?"#F59E0B":"#34D399"}}>{util.toFixed(1)}%</span>
+            </div>
+            <div style={{background:"#0F172A",borderRadius:5,height:18,overflow:"hidden"}}>
+              <div style={{width:`${Math.min(util,100)}%`,height:"100%",background:util>85?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#06B6D4,#34D399)",borderRadius:5,transition:"width 0.4s"}}/>
+            </div>
+            <div style={{fontSize:10,color:"#64748B",marginTop:4,textAlign:"right"}}>{fmtV(volL)} / {fmtV(TV)}</div>
           </div>
-        </div>
-        <div style={{display:"flex",gap:8,marginBottom:6,padding:"4px 8px",background:"#0F172A",borderRadius:5,fontSize:9,color:"#64748B"}}>
-          {editMode?<span>Editando <b style={{color:"#F59E0B"}}>inventario</b></span>
-          :<><span style={{fontFamily:"JetBrains Mono",color:"#34D399"}}>colocadas</span><span>/</span><span style={{fontFamily:"JetBrains Mono",color:"#E8E6DF"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
-        </div>
-        {items.map(a=>{const pk=pkC[a.id]||0;
-          return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 8px",marginBottom:4,background:selId===a.id?"#0F172A":"#13192A",borderRadius:6,cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
-            <div style={{width:5,height:26,borderRadius:3,background:a.color,flexShrink:0}}/>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:500,color:"#F8FAFC",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
-              <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
-            {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?"#34D399":"#F59E0B",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
-            {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-              <button onClick={e=>{e.stopPropagation();setInv(a.id,a.inv-1);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#F59E0B",minWidth:24,textAlign:"center"}}>{a.inv}</span>
-              <button onClick={e=>{e.stopPropagation();setInv(a.id,a.inv+1);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
-            </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-              <button onClick={e=>{e.stopPropagation();removeOne(a.id);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
-              <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#06B6D4",minWidth:24,textAlign:"center"}}>{a.load}</span>
-              <button onClick={e=>{e.stopPropagation();addOne(a.id);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
-            </div>)}
-          </div>);
-        })}
-      </div>
-      <div style={{marginTop:12,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:"#94A3B8",lineHeight:1.5}}>
-        <span style={{fontWeight:600,color:"#CBD5E1"}}>💡</span> <b>+ es incremental:</b> busca el mejor hueco sin mover nada. <b>−</b> quita el último y reorganiza. Las estrategias reorganizan todo para optimizar.
+
+          <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"9px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
+            {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
+          </button>
+          {showStrats&&(
+            <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12,border:"1px solid #F59E0B22"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {STRATS.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"10px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
+                  <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:12,color:"#F8FAFC",fontWeight:600}}>{s.label}</div><div style={{fontSize:10,color:"#64748B",fontWeight:400,marginTop:2}}>{s.desc}</div></div>
+                </button>))}
+              </div>
+            </div>
+          )}
+
+          {sel&&(<div style={{background:`${sel.color}12`,border:`1px solid ${sel.color}33`,borderRadius:8,padding:10,marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:13,fontWeight:700,color:sel.color}}>{sel.name}</span>
+              <button onClick={()=>setSelId(null)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:15}}>✕</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:11,color:"#94A3B8"}}>
+              <span>Medidas: <b style={{color:"#E8E6DF"}}>{sel.ancho}×{sel.alto}×{sel.fondo}cm</b></span>
+              <span>Vol: <b style={{color:"#E8E6DF"}}>{fmtV(selVol)}</b></span>
+              <span>Inventario: <b style={{color:"#E8E6DF"}}>{sel.inv}</b></span>
+              <span>A cargar: <b style={{color:"#06B6D4"}}>{sel.load}</b></span>
+              <span>Colocadas: <b style={{color:(pkC[sel.id]||0)>=sel.load?"#34D399":"#F59E0B"}}>{pkC[sel.id]||0}</b></span>
+            </div>
+          </div>)}
+
+          <div style={{background:"#1E293B",borderRadius:8,padding:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <span style={{fontSize:12,fontWeight:600,color:"#F8FAFC"}}>Muebles</span>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"4px 8px",fontSize:10,color:editMode?"#F59E0B":"#94A3B8"}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
+                <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"4px 8px",fontSize:10,color:"#EF4444"}}>Todos a 0</button>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:6,padding:"4px 8px",background:"#0F172A",borderRadius:5,fontSize:9,color:"#64748B"}}>
+              {editMode?<span>Editando <b style={{color:"#F59E0B"}}>inventario</b></span>
+              :<><span style={{fontFamily:"JetBrains Mono",color:"#34D399"}}>colocadas</span><span>/</span><span style={{fontFamily:"JetBrains Mono",color:"#E8E6DF"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
+            </div>
+            {items.map(a=>{const pk=pkC[a.id]||0;
+              return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 8px",marginBottom:4,background:selId===a.id?"#0F172A":"#13192A",borderRadius:6,cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
+                <div style={{width:5,height:26,borderRadius:3,background:a.color,flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:500,color:"#F8FAFC",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
+                  <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
+                {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?"#34D399":"#F59E0B",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
+                {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <button onClick={e=>{e.stopPropagation();setInv(a.id,a.inv-1);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#F59E0B",minWidth:24,textAlign:"center"}}>{a.inv}</span>
+                  <button onClick={e=>{e.stopPropagation();setInv(a.id,a.inv+1);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
+                  <button onClick={e=>{e.stopPropagation();removeOne(a.id);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#06B6D4",minWidth:24,textAlign:"center"}}>{a.load}</span>
+                  <button onClick={e=>{e.stopPropagation();addOne(a.id);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                </div>)}
+              </div>);
+            })}
+          </div>
+
+          <div style={{marginTop:12,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:"#94A3B8",lineHeight:1.5}}>
+            <span style={{fontWeight:600,color:"#CBD5E1"}}>💡</span> <b>+ es incremental:</b> busca el mejor hueco sin mover nada. <b>−</b> quita el último y reorganiza. Las estrategias reorganizan todo para optimizar.
+          </div>
+
+        </div>{/* end left */}
+
+        {/* ── RIGHT PANEL: visual ── */}
+        <div className="tp-right">
+
+          <div style={{display:"flex",gap:3,marginBottom:8}}>
+            <button onClick={()=>setVM("3d")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="3d"?"#06B6D4":"#1E293B",color:viewMode==="3d"?"#0B1121":"#64748B"}}>🧊 3D</button>
+            <button onClick={()=>setVM("grid")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="grid"?"#06B6D4":"#1E293B",color:viewMode==="grid"?"#0B1121":"#64748B"}}>⊞ 6 Vistas</button>
+          </div>
+
+          {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
+            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={placed} selId={selId}/>}
+            <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center"}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
+          </div>)}
+          {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:12}}>
+            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["top","bottom","right","left","front","back"].map(vk=>(<OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId}/>))}</div>)}
+          </div>)}
+
+        </div>{/* end right */}
+
       </div>
     </div>
   );
