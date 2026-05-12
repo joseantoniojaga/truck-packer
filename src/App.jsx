@@ -41,7 +41,7 @@ function hmapGetZ(x, y, l, w, placed) {
 }
 
 // Find best position for one item; items sit at z=0 or on top of others
-function findBestPos(dims, placed, trailer) {
+function findBestPos(dims, placed, trailer, mode="backToFront") {
   const rs = getRots(...dims);
   const xs = [...new Set([0, ...placed.map(p => p.x + p.l)])];
   const ys = [...new Set([0, ...placed.map(p => p.y + p.w)])];
@@ -53,8 +53,10 @@ function findBestPos(dims, placed, trailer) {
         if (y + rot.w > trailer.ancho + 0.1) continue;
         const z = hmapGetZ(x, y, rot.l, rot.w, placed);
         if (z + rot.h > trailer.alto + 0.1) continue;
-        // Prefer: lowest z, then leftmost x, then frontmost y
-        const score = z * 1e8 + x * 1e4 + y;
+        const waste = (trailer.largo - x - rot.l) + (trailer.ancho - y - rot.w);
+        const score = mode === "free"
+          ? z * 1e6 + waste
+          : x * 1e8 + z * 1e4 + y;
         if (!best || score < best.score) {
           best = {x, y, z, l: rot.l, w: rot.w, h: rot.h, score};
         }
@@ -65,7 +67,7 @@ function findBestPos(dims, placed, trailer) {
 }
 
 // Full repack from scratch (for strategies, removals, reset)
-function fullPack(items, trailer) {
+function fullPack(items, trailer, mode="backToFront") {
   const placed = [];
   const types = [...items].filter(it => it.load > 0)
     .map(it => ({...it, vol: it.ancho * it.alto * it.fondo}))
@@ -73,7 +75,7 @@ function fullPack(items, trailer) {
   for (const type of types) {
     let rem = type.load;
     while (rem > 0) {
-      const pos = findBestPos([type.ancho, type.alto, type.fondo], placed, trailer);
+      const pos = findBestPos([type.ancho, type.alto, type.fondo], placed, trailer, mode);
       if (!pos) break;
       placed.push({id: type.id, name: type.name, color: type.color,
         x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h});
@@ -186,6 +188,7 @@ export default function App(){
   const [showStrats,setSS]=useState(false);
   const [computing,setComp]=useState(false);
   const [conflict,setConflict]=useState(null);
+  const [packMode,setPackMode]=useState("backToFront");
 
   useEffect(()=>{
     document.body.style.background="#0B1121";
@@ -208,11 +211,11 @@ export default function App(){
   const addOne=useCallback((id)=>{
     const it=items.find(x=>x.id===id);
     if(!it||it.load>=it.inv)return;
-    const pos=findBestPos([it.ancho,it.alto,it.fondo],placed,TR);
+    const pos=findBestPos([it.ancho,it.alto,it.fondo],placed,TR,packMode);
     if(!pos){
       // No space — try full repack with increased load to see if reorganizing helps
       const newItems=items.map(x=>x.id===id?{...x,load:x.load+1}:x);
-      const{placed:newP}=fullPack(newItems,TR);
+      const{placed:newP}=fullPack(newItems,TR,packMode);
       const newC=getCounts(newP);
       const displaced=[];
       for(const x of items){if(x.id===id||x.load===0)continue;const oc=pkC[x.id]||0;const nc=newC[x.id]||0;if(nc<oc)displaced.push({id:x.id,name:x.name,lost:oc-nc,oldC:oc,newC:nc});}
@@ -226,22 +229,22 @@ export default function App(){
     const newItem={id:it.id,name:it.name,color:it.color,x:pos.x,y:pos.y,z:pos.z,l:pos.l,w:pos.w,h:pos.h};
     setItems(items.map(x=>x.id===id?{...x,load:x.load+1}:x));
     setPlaced([...placed,newItem]);
-  },[items,placed,pkC]);
+  },[items,placed,pkC,packMode]);
 
   // REMOVE: remove last of this type, full repack remaining
   const removeOne=useCallback((id)=>{
     const it=items.find(x=>x.id===id);
     if(!it||it.load<=0)return;
     const newItems=items.map(x=>x.id===id?{...x,load:x.load-1}:x);
-    const{placed:newP}=fullPack(newItems,TR);
+    const{placed:newP}=fullPack(newItems,TR,packMode);
     setItems(newItems);setPlaced(newP);
-  },[items]);
+  },[items,packMode]);
 
   // FULL REPACK (strategies, reset)
   const doRepack=useCallback((newItems)=>{
-    const{placed:p}=fullPack(newItems,TR);
+    const{placed:p}=fullPack(newItems,TR,packMode);
     setItems(newItems);setPlaced(p);
-  },[]);
+  },[packMode]);
 
   const setInv=useCallback((id,v)=>{
     const ni=items.map(it=>it.id===id?{...it,inv:Math.max(0,v),load:Math.min(it.load,Math.max(0,v))}:it);
@@ -313,6 +316,11 @@ export default function App(){
               <div style={{width:`${Math.min(util,100)}%`,height:"100%",background:util>85?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#06B6D4,#34D399)",borderRadius:5,transition:"width 0.4s"}}/>
             </div>
             <div style={{fontSize:10,color:"#64748B",marginTop:4,textAlign:"right"}}>{fmtV(volL)} / {fmtV(TV)}</div>
+          </div>
+
+          <div style={{display:"flex",gap:4,marginBottom:8}}>
+            <button onClick={()=>setPackMode("free")} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
+            <button onClick={()=>setPackMode("backToFront")} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
           </div>
 
           <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
