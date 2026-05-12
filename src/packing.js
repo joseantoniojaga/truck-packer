@@ -42,7 +42,7 @@ export function supportRatio(x, y, l, w, z, placed) {
   return area > 0 ? supported / area : 0;
 }
 
-// itemId: when set, items of the same type already placed at (x,y) get a -1e5 bonus
+// itemId: when set, items of the same type already at (x,y) get a -5e7 stacking bonus
 export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null) {
   const rs = getRots(...dims);
   const xs = [...new Set([0, ...placed.flatMap(p => [p.x, p.x + p.l])])];
@@ -56,12 +56,12 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
         const z = hmapGetZ(x, y, rot.l, rot.w, placed);
         if (z + rot.h > trailer.alto + 0.1) continue;
         if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
-        const sameTypeBelow = itemId !== null &&
-          placed.some(p => p.id === itemId && Math.abs(p.x - x) < 1 && Math.abs(p.y - y) < 1);
+        const sameTypeAtXY = itemId !== null &&
+          placed.some(p => p.id === itemId && Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
         let score = mode === "backToFront"
           ? x * 1e8 + z * 1e4 + y
           : z * 1e6 + x * 1e3 + y;
-        if (sameTypeBelow) score -= 1e5;
+        if (sameTypeAtXY) score -= 5e7;
         if (!best || score < best.score) {
           best = { x, y, z, l: rot.l, w: rot.w, h: rot.h, score };
         }

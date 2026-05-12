@@ -1,4 +1,5 @@
 import { getRots, hmapGetZ, supportRatio, findBestPos, fullPack } from './packing.js';
+import { FURNITURE } from './furniture.js';
 
 const TR = { largo: 1615.4, ancho: 247, alto: 280 };
 let pass = 0, fail = 0;
@@ -6,6 +7,21 @@ let pass = 0, fail = 0;
 function check(condition, msg) {
   if (condition) { console.log(`  ✓ ${msg}`); pass++; }
   else { console.error(`  ✗ FAIL: ${msg}`); fail++; }
+}
+
+function assert(condition, msg) {
+  if (!condition) throw new Error(msg);
+}
+
+function test(name, fn) {
+  try {
+    fn();
+    console.log(`  ✓ ${name}`);
+    pass++;
+  } catch (e) {
+    console.error(`  ✗ FAIL: ${name}: ${e.message}`);
+    fail++;
+  }
 }
 
 function overlaps(a, b) {
@@ -190,6 +206,36 @@ console.log('\nTest 10: Dentro del tráiler');
     }
   }
   if (allInside) check(true, `Todos los ${placed.length} items dentro del tráiler`);
+}
+
+// ─── Tests por tipo de mueble ─────────────────────────────────────────────────
+console.log('\nTests por tipo de mueble');
+for (const furn of FURNITURE) {
+  test(furn.name + ': se coloca en z=0', () => {
+    const pos = findBestPos([furn.ancho, furn.alto, furn.fondo], [], TR, 'free', furn.id);
+    assert(pos !== null, 'no encontró posición');
+    assert(pos.z === 0, 'z debería ser 0, fue ' + pos.z);
+  });
+
+  test(furn.name + ': 2 items se apilan sin escalonar', () => {
+    const pos1 = findBestPos([furn.ancho, furn.alto, furn.fondo], [], TR, 'backToFront', furn.id);
+    const item1 = { id:furn.id, name:furn.name, color:furn.color, x:pos1.x, y:pos1.y, z:pos1.z, l:pos1.l, w:pos1.w, h:pos1.h };
+    const pos2 = findBestPos([furn.ancho, furn.alto, furn.fondo], [item1], TR, 'backToFront', furn.id);
+    assert(pos2 !== null, 'no encontró posición para segundo item');
+    const stacked = Math.abs(pos2.x - pos1.x) < 1 && Math.abs(pos2.y - pos1.y) < 1 && pos2.z > 0;
+    const adjacent = pos2.z === 0;
+    assert(stacked || adjacent, 'item escalonado: pos1=(' + pos1.x + ',' + pos1.y + ') pos2=(' + pos2.x + ',' + pos2.y + ')');
+  });
+
+  test(furn.name + ': inventario completo sin flotar', () => {
+    const items = [{ id:furn.id, name:furn.name, inv:furn.inv, ancho:furn.ancho, alto:furn.alto, fondo:furn.fondo, color:furn.color, load:Math.min(furn.inv, 20) }];
+    const { placed } = fullPack(items, TR, 'backToFront');
+    for (const p of placed) {
+      if (p.z < 1) continue;
+      const sup = supportRatio(p.x, p.y, p.l, p.w, p.z, placed.filter(b => b !== p));
+      assert(sup >= 0.79, furn.name + ' flota en z=' + p.z + ' con soporte ' + (sup*100).toFixed(0) + '%');
+    }
+  });
 }
 
 // ─── Resumen ──────────────────────────────────────────────────────────────────
