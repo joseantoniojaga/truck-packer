@@ -40,6 +40,20 @@ function hmapGetZ(x, y, l, w, placed) {
   return maxZ;
 }
 
+// Fraction of the item footprint (x,y,l,w) supported by items whose top is at z
+function supportRatio(x, y, l, w, z, placed) {
+  if (z < 1) return 1;
+  let supported = 0;
+  const area = l * w;
+  for (const p of placed) {
+    if (Math.abs(p.z + p.h - z) > 2) continue;
+    const ox = Math.max(0, Math.min(x+l, p.x+p.l) - Math.max(x, p.x));
+    const oy = Math.max(0, Math.min(y+w, p.y+p.w) - Math.max(y, p.y));
+    supported += ox * oy;
+  }
+  return area > 0 ? supported / area : 0;
+}
+
 // Find best position for one item; items sit at z=0 or on top of others
 function findBestPos(dims, placed, trailer, mode="backToFront") {
   const rs = getRots(...dims);
@@ -53,6 +67,7 @@ function findBestPos(dims, placed, trailer, mode="backToFront") {
         if (y + rot.w > trailer.ancho + 0.1) continue;
         const z = hmapGetZ(x, y, rot.l, rot.w, placed);
         if (z + rot.h > trailer.alto + 0.1) continue;
+        if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
         // backToFront: x es prioridad absoluta (llena sección completa antes de avanzar)
         // free: x pesa poco (puede avanzar si hay mejor hueco más adelante)
         const score = mode === "backToFront"
@@ -322,8 +337,8 @@ export default function App(){
           </div>
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>setPackMode("free")} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
-            <button onClick={()=>setPackMode("backToFront")} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
+            <button onClick={()=>{if(placed.length>0){if(!window.confirm("Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?"))return;setItems(items.map(it=>({...it,load:0})));setPlaced([]);}setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
+            <button onClick={()=>{if(placed.length>0){if(!window.confirm("Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?"))return;setItems(items.map(it=>({...it,load:0})));setPlaced([]);}setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
           </div>
 
           <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
