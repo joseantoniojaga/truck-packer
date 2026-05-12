@@ -207,6 +207,7 @@ export default function App(){
   const [packMode,setPackMode]=useState("backToFront");
   const [modeSwitchTarget,setModeSwitchTarget]=useState(null);
   const [pendingStrat,setPendingStrat]=useState(null);
+  const [pendingAdd,setPendingAdd]=useState(null);
 
   useEffect(()=>{
     document.body.style.background="#0B1121";
@@ -230,26 +231,28 @@ export default function App(){
     const it=items.find(x=>x.id===id);
     if(!it||it.load>=it.inv)return;
     const pos=findBestPos([it.ancho,it.alto,it.fondo],placed,TR,packMode);
-    if(!pos){
-      // No direct space — try full repack with increased load
-      const newItems=items.map(x=>x.id===id?{...x,load:x.load+1}:x);
-      const{placed:newP}=fullPack(newItems,TR,packMode);
-      const newC=getCounts(newP);
-      // If the item still didn't fit even after repack, do nothing
-      if((newC[id]||0)<=it.load) return;
-      const displaced=[];
-      for(const x of items){if(x.id===id||x.load===0)continue;const oc=pkC[x.id]||0;const nc=newC[x.id]||0;if(nc<oc)displaced.push({id:x.id,name:x.name,lost:oc-nc,oldC:oc,newC:nc});}
-      if(displaced.length>0){
-        setConflict({id,itemName:it.name,displaced,newItems,newP});
-      } else {
-        setItems(newItems);setPlaced(newP);
-      }
-      return;
-    }
+    if(!pos){setPendingAdd({id,itemName:it.name});return;}
     const newItem={id:it.id,name:it.name,color:it.color,x:pos.x,y:pos.y,z:pos.z,l:pos.l,w:pos.w,h:pos.h};
     setItems(items.map(x=>x.id===id?{...x,load:x.load+1}:x));
     setPlaced([...placed,newItem]);
-  },[items,placed,pkC,packMode]);
+  },[items,placed,packMode]);
+
+  // Runs after user confirms the reorganize popup
+  const confirmAdd=useCallback(()=>{
+    if(!pendingAdd)return;
+    const{id}=pendingAdd;
+    setPendingAdd(null);
+    const it=items.find(x=>x.id===id);
+    if(!it||it.load>=it.inv)return;
+    const newItems=items.map(x=>x.id===id?{...x,load:x.load+1}:x);
+    const{placed:newP}=fullPack(newItems,TR,packMode);
+    const newC=getCounts(newP);
+    if((newC[id]||0)<=it.load)return;
+    const displaced=[];
+    for(const x of items){if(x.id===id||x.load===0)continue;const oc=pkC[x.id]||0;const nc=newC[x.id]||0;if(nc<oc)displaced.push({id:x.id,name:x.name,lost:oc-nc,oldC:oc,newC:nc});}
+    if(displaced.length>0){setConflict({id,itemName:it.name,displaced,newItems,newP});}
+    else{setItems(newItems);setPlaced(newP);}
+  },[pendingAdd,items,pkC,packMode]);
 
   // REMOVE: remove last of this type, full repack remaining
   const removeOne=useCallback((id)=>{
@@ -336,6 +339,20 @@ export default function App(){
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
               <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REORGANIZE ADD CONFIRM */}
+      {pendingAdd&&(
+        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🔄 Reorganizar carga</div>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"#06B6D4"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={confirmAdd} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+              <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>No, dejarlo así</button>
             </div>
           </div>
         </div>
