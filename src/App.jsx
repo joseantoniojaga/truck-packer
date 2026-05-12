@@ -55,8 +55,8 @@ function findBestPos(dims, placed, trailer, mode="backToFront") {
         if (z + rot.h > trailer.alto + 0.1) continue;
         const waste = (trailer.largo - x - rot.l) + (trailer.ancho - y - rot.w);
         const score = mode === "free"
-          ? z * 1e6 + waste
-          : x * 1e8 + z * 1e4 + y;
+          ? z * 1e8 + waste * 1e4 + y
+          : z * 1e8 + x * 1e4 + y;
         if (!best || score < best.score) {
           best = {x, y, z, l: rot.l, w: rot.w, h: rot.h, score};
         }
