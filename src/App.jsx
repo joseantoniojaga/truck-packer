@@ -40,29 +40,6 @@ function hmapGetZ(x, y, l, w, placed) {
   return maxZ;
 }
 
-// Count faces of a placed item that touch a wall or another item (0–6)
-function getTightness(x, y, z, l, w, h, placed, trailer) {
-  let t = 0;
-  if (z < 0.1) t++;
-  if (x < 0.1) t++;
-  if (x + l > trailer.largo - 0.1) t++;
-  if (y < 0.1) t++;
-  if (y + w > trailer.ancho - 0.1) t++;
-  if (z + h > trailer.alto - 0.1) t++;
-  for (const p of placed) {
-    const oy = Math.min(y+w,p.y+p.w)-Math.max(y,p.y) > 0.1;
-    const oz = Math.min(z+h,p.z+p.h)-Math.max(z,p.z) > 0.1;
-    const ox = Math.min(x+l,p.x+p.l)-Math.max(x,p.x) > 0.1;
-    if (Math.abs(p.x+p.l-x)   < 0.1 && oy && oz) t++;
-    if (Math.abs(p.x-(x+l))   < 0.1 && oy && oz) t++;
-    if (Math.abs(p.y+p.w-y)   < 0.1 && ox && oz) t++;
-    if (Math.abs(p.y-(y+w))   < 0.1 && ox && oz) t++;
-    if (Math.abs(p.z+p.h-z)   < 0.1 && ox && oy) t++;
-    if (Math.abs(p.z-(z+h))   < 0.1 && ox && oy) t++;
-  }
-  return t;
-}
-
 // Find best position for one item; items sit at z=0 or on top of others
 function findBestPos(dims, placed, trailer, mode="backToFront") {
   const rs = getRots(...dims);
@@ -76,9 +53,11 @@ function findBestPos(dims, placed, trailer, mode="backToFront") {
         if (y + rot.w > trailer.ancho + 0.1) continue;
         const z = hmapGetZ(x, y, rot.l, rot.w, placed);
         if (z + rot.h > trailer.alto + 0.1) continue;
-        const score = mode === "free"
-          ? z * 1e6 + getTightness(x,y,z,rot.l,rot.w,rot.h,placed,trailer) * (-1e5) + x * 100 + y
-          : x * 1e8 + z * 1e4 + y;
+        // backToFront: x es prioridad absoluta (llena sección completa antes de avanzar)
+        // free: x pesa poco (puede avanzar si hay mejor hueco más adelante)
+        const score = mode === "backToFront"
+          ? x * 1e8 + z * 1e4 + y
+          : z * 1e6 + x * 1e3 + y;
         if (!best || score < best.score) {
           best = {x, y, z, l: rot.l, w: rot.w, h: rot.h, score};
         }
@@ -235,15 +214,17 @@ export default function App(){
     if(!it||it.load>=it.inv)return;
     const pos=findBestPos([it.ancho,it.alto,it.fondo],placed,TR,packMode);
     if(!pos){
-      // No space — try full repack with increased load to see if reorganizing helps
+      // No direct space — try full repack with increased load
       const newItems=items.map(x=>x.id===id?{...x,load:x.load+1}:x);
       const{placed:newP}=fullPack(newItems,TR,packMode);
       const newC=getCounts(newP);
+      // If the item still didn't fit even after repack, do nothing
+      if((newC[id]||0)<=it.load) return;
       const displaced=[];
       for(const x of items){if(x.id===id||x.load===0)continue;const oc=pkC[x.id]||0;const nc=newC[x.id]||0;if(nc<oc)displaced.push({id:x.id,name:x.name,lost:oc-nc,oldC:oc,newC:nc});}
       if(displaced.length>0){
         setConflict({id,itemName:it.name,displaced,newItems,newP});
-      } else if((newC[id]||0)>it.load){
+      } else {
         setItems(newItems);setPlaced(newP);
       }
       return;
