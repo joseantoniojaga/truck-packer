@@ -102,20 +102,6 @@ function applyStrat(key,items){
   return w;
 }
 
-function useRepeatAction(action, delay = 300, interval = 100) {
-  const timerRef = useRef(null);
-  const start = () => {
-    action();
-    timerRef.current = setTimeout(() => {
-      timerRef.current = setInterval(action, interval);
-    }, delay);
-  };
-  const stop = () => {
-    clearTimeout(timerRef.current);
-    clearInterval(timerRef.current);
-  };
-  return { onMouseDown: start, onMouseUp: stop, onMouseLeave: stop, onTouchStart: start, onTouchEnd: stop };
-}
 
 export default function App(){
   const [items,setItems]=useState(FURNITURE.map(it=>({...it,load:0})));
@@ -130,7 +116,6 @@ export default function App(){
   const [modeSwitchTarget,setModeSwitchTarget]=useState(null);
   const [pendingStrat,setPendingStrat]=useState(null);
   const [pendingAdd,setPendingAdd]=useState(null);
-  const [pendingRemove,setPendingRemove]=useState(null);
   const [showReorgConfirm,setShowReorgConfirm]=useState(false);
 
   useEffect(()=>{
@@ -144,9 +129,9 @@ export default function App(){
   const onZoomIn=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r-200));};
   const onZoomOut=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r+200));};
 
-  const rpRef=useRef(null);
-  const stopRepeat=useCallback(()=>{clearTimeout(rpRef.current);clearInterval(rpRef.current);rpRef.current=null;},[]);
-  const startRepeat=useCallback((action)=>{stopRepeat();action();rpRef.current=setTimeout(()=>{rpRef.current=setInterval(action,100);},300);},[stopRepeat]);
+  const repeatRef=useRef(null);
+  const startRepeat=(action)=>{action();repeatRef.current=setTimeout(()=>{repeatRef.current=setInterval(action,120);},400);};
+  const stopRepeat=()=>{clearTimeout(repeatRef.current);clearInterval(repeatRef.current);};
 
   const pkC=useMemo(()=>getCounts(placed),[placed]);
   const volL=placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
@@ -182,16 +167,16 @@ export default function App(){
     else{setItems(newItems);setPlaced(newP);}
   },[pendingAdd,items,pkC,packMode]);
 
-  // REMOVE: show popup if other items are placed, otherwise just remove
+  // REMOVE: just remove the last placed item of this type, no repack
   const removeOne=useCallback((id)=>{
     const it=items.find(x=>x.id===id);
     if(!it||it.load<=0)return;
-    if(placed.length>1){
-      setPendingRemove(id);
-    } else {
-      setItems(items.map(x=>x.id===id?{...x,load:0}:x));
-      setPlaced([]);
-    }
+    const lastIndex=[...placed].reverse().findIndex(p=>p.id===id);
+    if(lastIndex===-1)return;
+    const realIndex=placed.length-1-lastIndex;
+    const newPlaced=placed.filter((_,i)=>i!==realIndex);
+    setItems(items.map(x=>x.id===id?{...x,load:x.load-1}:x));
+    setPlaced(newPlaced);
   },[items,placed]);
 
   // FULL REPACK (strategies, reset)
@@ -201,9 +186,22 @@ export default function App(){
   },[packMode]);
 
   const setInv=useCallback((id,v)=>{
-    const ni=items.map(it=>it.id===id?{...it,inv:Math.max(0,v),load:Math.min(it.load,Math.max(0,v))}:it);
-    doRepack(ni);
-  },[items,doRepack]);
+    const newInv=Math.max(0,v);
+    setItems(items.map(it=>{
+      if(it.id!==id)return it;
+      return{...it,inv:newInv,load:Math.min(it.load,newInv)};
+    }));
+    const it=items.find(x=>x.id===id);
+    if(it&&it.load>newInv){
+      const excess=it.load-newInv;
+      let removed=0;
+      const newPlaced=[...placed];
+      for(let i=newPlaced.length-1;i>=0&&removed<excess;i--){
+        if(newPlaced[i].id===id){newPlaced.splice(i,1);removed++;}
+      }
+      setPlaced(newPlaced);
+    }
+  },[items,placed]);
 
   const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=applyStrat(k,items);doRepack(r);setSS(false);setComp(false);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
@@ -284,20 +282,6 @@ export default function App(){
             <div style={{display:"flex",gap:8}}>
               <button onClick={confirmAdd} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
               <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>No, dejarlo así</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* REMOVE CONFIRM */}
-      {pendingRemove!==null&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🔄 Quitar mueble</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Quitar este mueble reorganizará los demás. ¿Continuar?</p>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{const id=pendingRemove;setPendingRemove(null);const ni=items.map(x=>x.id===id?{...x,load:x.load-1}:x);const{placed:p}=fullPack(ni,TR,packMode);setItems(ni);setPlaced(p);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Sí, quitar y reorganizar</button>
-              <button onClick={()=>setPendingRemove(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
             </div>
           </div>
         </div>
@@ -398,13 +382,13 @@ export default function App(){
                   <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
                 {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?"#34D399":"#F59E0B",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv-1));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv-1));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv-1));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={()=>startRepeat(()=>setInv(a.id,a.inv-1))} onTouchEnd={stopRepeat} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
                   <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#F59E0B",minWidth:24,textAlign:"center"}}>{a.inv}</span>
-                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv+1));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv+1));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv+1));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={()=>startRepeat(()=>setInv(a.id,a.inv+1))} onTouchEnd={stopRepeat} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>removeOne(a.id));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>removeOne(a.id));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>removeOne(a.id));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={()=>startRepeat(()=>removeOne(a.id))} onTouchEnd={stopRepeat} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
                   <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#06B6D4",minWidth:24,textAlign:"center"}}>{a.load}</span>
-                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>addOne(a.id));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>addOne(a.id));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>addOne(a.id));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={()=>startRepeat(()=>addOne(a.id))} onTouchEnd={stopRepeat} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>)}
               </div>);
             })}

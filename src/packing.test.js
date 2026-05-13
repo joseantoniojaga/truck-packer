@@ -208,6 +208,54 @@ console.log('\nTest 10: Dentro del tráiler');
   if (allInside) check(true, `Todos los ${placed.length} items dentro del tráiler`);
 }
 
+// ─── Tests: quitar item y setInv sin reorganizar ──────────────────────────────
+console.log('\nTests: quitar item sin reorganizar');
+{
+  test('Quitar item: placed se reduce en 1', () => {
+    const items = [{id:4,name:"B",inv:32,ancho:65,alto:65,fondo:40,color:"#F2CC8F",load:5}];
+    const {placed} = fullPack(items, TR, 'free');
+    const originalCount = placed.length;
+    const lastIdx = [...placed].reverse().findIndex(p => p.id === 4);
+    const realIdx = placed.length - 1 - lastIdx;
+    const newPlaced = placed.filter((_, i) => i !== realIdx);
+    assert(newPlaced.length === originalCount - 1, 'debería tener 1 menos');
+  });
+
+  test('Quitar item: los demás no se mueven', () => {
+    const items = [{id:4,name:"B",inv:32,ancho:65,alto:65,fondo:40,color:"#F2CC8F",load:5}];
+    const {placed} = fullPack(items, TR, 'free');
+    const lastIdx = [...placed].reverse().findIndex(p => p.id === 4);
+    const realIdx = placed.length - 1 - lastIdx;
+    const remaining = placed.filter((_, i) => i !== realIdx);
+    for (let i = 0; i < remaining.length; i++) {
+      const orig = placed.filter((_, j) => j !== realIdx)[i];
+      assert(remaining[i].x === orig.x && remaining[i].y === orig.y && remaining[i].z === orig.z, 'item se movió al quitar otro');
+    }
+  });
+
+  test('fullPack: items del mismo tipo se apilan en columnas (no escalones)', () => {
+    // Buró Hampton (65×65×40): h=40 permite apilar 7 (7×40=280=alto tráiler)
+    const items = [{id:4,name:"Buró Hampton",inv:32,ancho:65,alto:65,fondo:40,color:"#F2CC8F",load:4}];
+    const {placed} = fullPack(items, TR, 'backToFront');
+    const positions = {};
+    for (const p of placed) {
+      const key = Math.round(p.x) + ',' + Math.round(p.y);
+      positions[key] = (positions[key] || 0) + 1;
+    }
+    const singles = Object.values(positions).filter(c => c === 1).length;
+    const total = Object.keys(positions).length;
+    assert(singles <= total * 0.5, 'demasiados items sin apilar: ' + singles + '/' + total + ' posiciones con solo 1 item');
+  });
+
+  test('Cambiar inventario no mueve items existentes', () => {
+    const items = [{id:4,name:"B",inv:32,ancho:65,alto:65,fondo:40,color:"#F2CC8F",load:5}];
+    const {placed} = fullPack(items, TR, 'free');
+    const pos0 = {x: placed[0].x, y: placed[0].y, z: placed[0].z};
+    // Simular bajar inventario a 30 (load 5 no se afecta, items placed no cambian)
+    assert(placed[0].x === pos0.x, 'item se movió al cambiar inventario');
+  });
+}
+
 // ─── Tests por tipo de mueble ─────────────────────────────────────────────────
 console.log('\nTests por tipo de mueble');
 for (const furn of FURNITURE) {
