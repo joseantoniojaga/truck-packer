@@ -130,6 +130,8 @@ export default function App(){
   const [modeSwitchTarget,setModeSwitchTarget]=useState(null);
   const [pendingStrat,setPendingStrat]=useState(null);
   const [pendingAdd,setPendingAdd]=useState(null);
+  const [pendingRemove,setPendingRemove]=useState(null);
+  const [showReorgConfirm,setShowReorgConfirm]=useState(false);
 
   useEffect(()=>{
     document.body.style.background="#0B1121";
@@ -180,14 +182,17 @@ export default function App(){
     else{setItems(newItems);setPlaced(newP);}
   },[pendingAdd,items,pkC,packMode]);
 
-  // REMOVE: remove last of this type, full repack remaining
+  // REMOVE: show popup if other items are placed, otherwise just remove
   const removeOne=useCallback((id)=>{
     const it=items.find(x=>x.id===id);
     if(!it||it.load<=0)return;
-    const newItems=items.map(x=>x.id===id?{...x,load:x.load-1}:x);
-    const{placed:newP}=fullPack(newItems,TR,packMode);
-    setItems(newItems);setPlaced(newP);
-  },[items,packMode]);
+    if(placed.length>1){
+      setPendingRemove(id);
+    } else {
+      setItems(items.map(x=>x.id===id?{...x,load:0}:x));
+      setPlaced([]);
+    }
+  },[items,placed]);
 
   // FULL REPACK (strategies, reset)
   const doRepack=useCallback((newItems)=>{
@@ -284,6 +289,34 @@ export default function App(){
         </div>
       )}
 
+      {/* REMOVE CONFIRM */}
+      {pendingRemove!==null&&(
+        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🔄 Quitar mueble</div>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Quitar este mueble reorganizará los demás. ¿Continuar?</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{const id=pendingRemove;setPendingRemove(null);const ni=items.map(x=>x.id===id?{...x,load:x.load-1}:x);const{placed:p}=fullPack(ni,TR,packMode);setItems(ni);setPlaced(p);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Sí, quitar y reorganizar</button>
+              <button onClick={()=>setPendingRemove(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REORG CONFIRM */}
+      {showReorgConfirm&&(
+        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #06B6D444"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#06B6D4",marginBottom:10}}>🔄 Reorganizar carga</div>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+              <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── HEADER (ancho completo) ── */}
       <div className="tp-header">
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
@@ -314,6 +347,10 @@ export default function App(){
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
           </div>
+
+          <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#06B6D4",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:"#06B6D444",opacity:(computing||placed.length===0)?0.5:1}}>
+            🔄 Reorganizar
+          </button>
 
           <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
             {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
