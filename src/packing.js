@@ -66,8 +66,8 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
           (x + rot.l > trailer.largo - 1 ? 1 : 0)
         );
         let score = mode === "backToFront"
-          ? x * 1e8 + z * 1e4 + y - wallBonus * 5e3
-          : z * 1e6 + x * 1e3 + y - wallBonus * 5e3;
+          ? x * 1e8 + z * 1e4 + y - wallBonus * 500
+          : z * 1e6 + x * 1e3 + y - wallBonus * 500;
         if (sameTypeAtXY) score -= 5e7;
         if (!best || score < best.score) {
           best = { x, y, z, l: rot.l, w: rot.w, h: rot.h, score };

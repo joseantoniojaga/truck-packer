@@ -102,6 +102,21 @@ function applyStrat(key,items){
   return w;
 }
 
+function useRepeatAction(action, delay = 300, interval = 100) {
+  const timerRef = useRef(null);
+  const start = () => {
+    action();
+    timerRef.current = setTimeout(() => {
+      timerRef.current = setInterval(action, interval);
+    }, delay);
+  };
+  const stop = () => {
+    clearTimeout(timerRef.current);
+    clearInterval(timerRef.current);
+  };
+  return { onMouseDown: start, onMouseUp: stop, onMouseLeave: stop, onTouchStart: start, onTouchEnd: stop };
+}
+
 export default function App(){
   const [items,setItems]=useState(FURNITURE.map(it=>({...it,load:0})));
   const [placed,setPlaced]=useState([]);
@@ -126,6 +141,10 @@ export default function App(){
   const stRef=useRef({th:Math.PI/4,ph:Math.PI/3,r:1400,dr:false,lx:0,ly:0});
   const onZoomIn=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r-200));};
   const onZoomOut=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r+200));};
+
+  const rpRef=useRef(null);
+  const stopRepeat=useCallback(()=>{clearTimeout(rpRef.current);clearInterval(rpRef.current);rpRef.current=null;},[]);
+  const startRepeat=useCallback((action)=>{stopRepeat();action();rpRef.current=setTimeout(()=>{rpRef.current=setInterval(action,100);},300);},[stopRepeat]);
 
   const pkC=useMemo(()=>getCounts(placed),[placed]);
   const volL=placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
@@ -342,13 +361,13 @@ export default function App(){
                   <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
                 {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?"#34D399":"#F59E0B",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onClick={e=>{e.stopPropagation();setInv(a.id,a.inv-1);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv-1));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv-1));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
                   <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#F59E0B",minWidth:24,textAlign:"center"}}>{a.inv}</span>
-                  <button onClick={e=>{e.stopPropagation();setInv(a.id,a.inv+1);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv+1));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>setInv(a.id,a.inv+1));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onClick={e=>{e.stopPropagation();removeOne(a.id);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>removeOne(a.id));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>removeOne(a.id));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
                   <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#06B6D4",minWidth:24,textAlign:"center"}}>{a.load}</span>
-                  <button onClick={e=>{e.stopPropagation();addOne(a.id);}} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startRepeat(()=>addOne(a.id));}} onMouseUp={stopRepeat} onMouseLeave={stopRepeat} onTouchStart={e=>{e.preventDefault();e.stopPropagation();startRepeat(()=>addOne(a.id));}} onTouchEnd={stopRepeat} onClick={e=>e.stopPropagation()} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>)}
               </div>);
             })}
