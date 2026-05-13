@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { findBestPos, fullPack, fmtV, getCounts } from './packing.js';
 import { FURNITURE } from './furniture.js';
+import { computeLoadingOrder } from './loadingSequence.js';
 
 const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
 const TV = TR.largo*TR.ancho*TR.alto;
@@ -9,7 +10,7 @@ const MIN = 5;
 
 
 // --- Three.js 3D Viewer ---
-function Viewer3D({placed,selId,stRef,onZoomIn,onZoomOut}){
+function Viewer3D({placed,selId,stRef,onZoomIn,onZoomOut,simMode,simStep}){
   const mRef=useRef(null);const st=stRef;
   const R=useRef({s:null,c:null,r:null,f:null});
   useEffect(()=>{
@@ -40,13 +41,16 @@ function Viewer3D({placed,selId,stRef,onZoomIn,onZoomOut}){
   },[]);
   useEffect(()=>{
     const{s}=R.current;if(!s)return;const rm=[];s.traverse(c=>{if(c.userData.bx)rm.push(c);});rm.forEach(c=>{c.geometry.dispose();c.material.dispose();s.remove(c);});
-    for(const p of placed){
+    const visible=simMode?placed.slice(0,simStep):placed;
+    visible.forEach((p,idx)=>{
+      const isCurrent=simMode&&idx===simStep-1;
+      const isSelected=!simMode&&selId===p.id;
       const g=new THREE.BoxGeometry(p.l-1,p.h-1,p.w-1);const co=new THREE.Color(p.color);
-      const m=new THREE.Mesh(g,new THREE.MeshPhongMaterial({color:co,transparent:true,opacity:selId===p.id?1:0.82,emissive:selId===p.id?co:new THREE.Color(0),emissiveIntensity:selId===p.id?0.3:0}));
+      const m=new THREE.Mesh(g,new THREE.MeshPhongMaterial({color:co,transparent:true,opacity:isCurrent||isSelected?1:simMode?0.65:0.82,emissive:isCurrent?co:isSelected?co:new THREE.Color(0),emissiveIntensity:isCurrent?0.5:isSelected?0.3:0}));
       m.position.set(p.x+p.l/2,p.z+p.h/2,p.y+p.w/2);m.userData={bx:true};
-      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:p.color})));s.add(m);
-    }
-  },[placed,selId]);
+      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:isCurrent?"#ffffff":p.color})));s.add(m);
+    });
+  },[placed,selId,simMode,simStep]);
   const BZ={width:32,height:32,borderRadius:"50%",background:"#1E293B",border:"1px solid #334155",color:"#fff",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,lineHeight:1};
   return(
     <div style={{position:"relative",width:"100%",borderRadius:6,overflow:"hidden"}}>
@@ -118,6 +122,11 @@ export default function App(){
   const [pendingAdd,setPendingAdd]=useState(null);
   const [showReorgConfirm,setShowReorgConfirm]=useState(false);
   const [holdAction,setHoldAction]=useState(null);
+  const [simMode,setSimMode]=useState(false);
+  const [simStep,setSimStep]=useState(0);
+  const [simSequence,setSimSequence]=useState([]);
+  const [simPlaying,setSimPlaying]=useState(false);
+  const simPlayRef=useRef(null);
 
   useEffect(()=>{
     document.body.style.background="#0B1121";
@@ -221,6 +230,34 @@ export default function App(){
       setPlaced(newPlaced);
     }
   },[items,placed]);
+
+  const startSim=()=>{
+    const seq=computeLoadingOrder(placed);
+    setSimSequence(seq);
+    setSimStep(0);
+    setSimMode(true);
+    setSimPlaying(false);
+  };
+
+  const stopSim=()=>{
+    clearInterval(simPlayRef.current);
+    simPlayRef.current=null;
+    setSimMode(false);
+    setSimPlaying(false);
+  };
+
+  const simAutoPlay=()=>{
+    if(simPlaying){clearInterval(simPlayRef.current);simPlayRef.current=null;setSimPlaying(false);return;}
+    setSimPlaying(true);
+    simPlayRef.current=setInterval(()=>{
+      setSimStep(s=>{
+        if(s>=simSequence.length){clearInterval(simPlayRef.current);simPlayRef.current=null;setSimPlaying(false);return s;}
+        return s+1;
+      });
+    },800);
+  };
+
+  useEffect(()=>{if(!simMode&&simPlayRef.current){clearInterval(simPlayRef.current);simPlayRef.current=null;}},[simMode]);
 
   const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=applyStrat(k,items);doRepack(r);setSS(false);setComp(false);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
@@ -351,9 +388,14 @@ export default function App(){
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
           </div>
 
-          <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#06B6D4",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:"#06B6D444",opacity:(computing||placed.length===0)?0.5:1}}>
-            🔄 Reorganizar
-          </button>
+          <div style={{display:"flex",gap:4,marginBottom:8}}>
+            <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"#06B6D4",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:"#06B6D444",opacity:(computing||placed.length===0)?0.5:1}}>
+              🔄 Reorganizar
+            </button>
+            <button onClick={startSim} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"#A78BFA",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:"#A78BFA44",opacity:(computing||placed.length===0)?0.5:1}}>
+              ▶ Simular
+            </button>
+          </div>
 
           <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
             {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
@@ -428,8 +470,34 @@ export default function App(){
           </div>
 
           {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut}/>}
-            <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
+            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={simMode?simSequence.map(s=>s.item):placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut} simMode={simMode} simStep={simStep}/>}
+            {simMode?(
+              <div style={{marginTop:8,background:"#0F172A",borderRadius:8,padding:10,border:"1px solid #A78BFA44",flexShrink:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{fontSize:11,fontWeight:600,color:"#A78BFA"}}>Simulador de carga</span>
+                  <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"#EF4444",borderColor:"#EF444444"}}>✕ Salir</button>
+                </div>
+                <div style={{background:"#1E293B",borderRadius:4,height:6,marginBottom:8,overflow:"hidden"}}>
+                  <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:"linear-gradient(90deg,#A78BFA,#06B6D4)",borderRadius:4,transition:"width 0.3s"}}/>
+                </div>
+                {simStep>0&&simStep<=simSequence.length&&(
+                  <div style={{fontSize:11,color:"#CBD5E1",marginBottom:8,background:"#1E293B",borderRadius:6,padding:"6px 8px",lineHeight:1.4}}>
+                    <span style={{color:"#A78BFA",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
+                  </div>
+                )}
+                {simStep===0&&<div style={{fontSize:11,color:"#475569",marginBottom:8}}>Presiona ▶ para avanzar paso a paso</div>}
+                {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:"#34D399",marginBottom:8}}>✓ Carga completa ({simSequence.length} muebles)</div>}
+                <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                  <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Primer paso">⏮</button>
+                  <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Anterior">◀</button>
+                  <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"#F59E0B":"#A78BFA",borderColor:simPlaying?"#F59E0B44":"#A78BFA44"}}>{simPlaying?"⏸ Pausar":"▶ Auto"}</button>
+                  <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Siguiente">▶</button>
+                  <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Último paso">⏭</button>
+                </div>
+              </div>
+            ):(
+              <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
+            )}
           </div>)}
           {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,overflowY:"auto"}}>
             {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(

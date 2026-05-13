@@ -1,5 +1,6 @@
 import { getRots, hmapGetZ, supportRatio, findBestPos, fullPack } from './packing.js';
 import { FURNITURE } from './furniture.js';
+import { computeLoadingOrder } from './loadingSequence.js';
 
 const TR = { largo: 1615.4, ancho: 247, alto: 280 };
 let pass = 0, fail = 0;
@@ -283,6 +284,48 @@ for (const furn of FURNITURE) {
       const sup = supportRatio(p.x, p.y, p.l, p.w, p.z, placed.filter(b => b !== p));
       assert(sup >= 0.79, furn.name + ' flota en z=' + p.z + ' con soporte ' + (sup*100).toFixed(0) + '%');
     }
+  });
+}
+
+// ─── Tests: simulador de carga ────────────────────────────────────────────────
+console.log('\nTests: simulador de carga');
+{
+  test('Loading order: items del fondo van primero', () => {
+    const placed = [
+      {id:1,name:"A",color:"#fff",x:500,y:0,z:0,l:100,w:100,h:100},
+      {id:2,name:"B",color:"#fff",x:0,y:0,z:0,l:100,w:100,h:100},
+    ];
+    const seq = computeLoadingOrder(placed);
+    assert(seq[0].item.x === 0, 'primer item debería ser el del fondo (x=0)');
+  });
+
+  test('Loading order: piso antes que apilado', () => {
+    const placed = [
+      {id:1,name:"A",color:"#fff",x:0,y:0,z:100,l:100,w:100,h:100},
+      {id:2,name:"B",color:"#fff",x:0,y:0,z:0,l:100,w:100,h:100},
+    ];
+    const seq = computeLoadingOrder(placed);
+    assert(seq[0].item.z === 0, 'primer item debería ser el del piso (z=0)');
+  });
+
+  test('Loading order: soporte antes que soportado', () => {
+    const placed = [
+      {id:1,name:"Arriba",color:"#fff",x:0,y:0,z:50,l:100,w:100,h:50},
+      {id:2,name:"Abajo",color:"#fff",x:0,y:0,z:0,l:100,w:100,h:50},
+    ];
+    const seq = computeLoadingOrder(placed);
+    assert(seq[0].item.name === "Abajo", 'item de soporte debería ir primero');
+    assert(seq[1].item.name === "Arriba", 'item soportado debería ir después');
+  });
+
+  test('Loading order: secuencia completa tiene todos los items', () => {
+    const placed = [
+      {id:1,name:"A",color:"#f00",x:0,y:0,z:0,l:65,w:65,h:40},
+      {id:2,name:"B",color:"#0f0",x:0,y:0,z:40,l:65,w:65,h:40},
+      {id:3,name:"C",color:"#00f",x:100,y:0,z:0,l:65,w:65,h:40},
+    ];
+    const seq = computeLoadingOrder(placed);
+    assert(seq.length === 3, 'secuencia debería tener 3 pasos');
   });
 }
 
