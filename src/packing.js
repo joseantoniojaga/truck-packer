@@ -42,7 +42,7 @@ export function supportRatio(x, y, l, w, z, placed) {
   return area > 0 ? supported / area : 0;
 }
 
-// itemId: when set, items of the same type already at (x,y) get a -5e7 stacking bonus
+// itemId: when set, items of the same type at the same (x,y) get a -5e7 stacking bonus
 export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null) {
   const rs = getRots(...dims);
   // Include wall-flush positions for every rotation so wallBonus can actually win
@@ -59,15 +59,9 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
         if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
         const sameTypeAtXY = itemId !== null &&
           placed.some(p => p.id === itemId && Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
-        const wallBonus = (
-          (x < 1 ? 1 : 0) +
-          (y < 1 ? 1 : 0) +
-          (y + rot.w > trailer.ancho - 1 ? 1 : 0) +
-          (x + rot.l > trailer.largo - 1 ? 1 : 0)
-        );
         let score = mode === "backToFront"
-          ? x * 1e8 + z * 1e4 + y - wallBonus * 500
-          : z * 1e6 + x * 1e3 + y - wallBonus * 500;
+          ? x * 1e8 + z * 1e4 + y
+          : z * 1e6 + x * 1e3 + y;
         if (sameTypeAtXY) score -= 5e7;
         if (!best || score < best.score) {
           best = { x, y, z, l: rot.l, w: rot.w, h: rot.h, score };
