@@ -45,8 +45,9 @@ export function supportRatio(x, y, l, w, z, placed) {
 // itemId: when set, items of the same type already at (x,y) get a -5e7 stacking bonus
 export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null) {
   const rs = getRots(...dims);
-  const xs = [...new Set([0, ...placed.flatMap(p => [p.x, p.x + p.l])])];
-  const ys = [...new Set([0, ...placed.flatMap(p => [p.y, p.y + p.w])])];
+  // Include wall-flush positions for every rotation so wallBonus can actually win
+  const xs = [...new Set([0, ...rs.map(r => trailer.largo - r.l), ...placed.flatMap(p => [p.x, p.x + p.l])])];
+  const ys = [...new Set([0, ...rs.map(r => trailer.ancho - r.w), ...placed.flatMap(p => [p.y, p.y + p.w])])];
   let best = null;
   for (const rot of rs) {
     for (const x of xs) {
@@ -58,9 +59,15 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
         if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
         const sameTypeAtXY = itemId !== null &&
           placed.some(p => p.id === itemId && Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
+        const wallBonus = (
+          (x < 1 ? 1 : 0) +
+          (y < 1 ? 1 : 0) +
+          (y + rot.w > trailer.ancho - 1 ? 1 : 0) +
+          (x + rot.l > trailer.largo - 1 ? 1 : 0)
+        );
         let score = mode === "backToFront"
-          ? x * 1e8 + z * 1e4 + y
-          : z * 1e6 + x * 1e3 + y;
+          ? x * 1e8 + z * 1e4 + y - wallBonus * 5e3
+          : z * 1e6 + x * 1e3 + y - wallBonus * 5e3;
         if (sameTypeAtXY) score -= 5e7;
         if (!best || score < best.score) {
           best = { x, y, z, l: rot.l, w: rot.w, h: rot.h, score };

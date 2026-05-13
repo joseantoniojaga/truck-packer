@@ -208,6 +208,17 @@ console.log('\nTest 10: Dentro del tráiler');
   if (allInside) check(true, `Todos los ${placed.length} items dentro del tráiler`);
 }
 
+// ─── Test 11: Items se pegan a paredes ───────────────────────────────────────
+console.log('\nTest 11: Items se pegan a paredes');
+{
+  test('Items se pegan a paredes', () => {
+    const items = [{ id:8, name:"Base Mat. Sierra", inv:32, ancho:137, alto:36, fondo:199.5, color:"#9B5DE5", load:4 }];
+    const { placed } = fullPack(items, TR, 'backToFront');
+    const touchWall = placed.filter(p => p.y < 1 || p.y + p.w > TR.ancho - 1);
+    assert(touchWall.length >= 2, 'Al menos 2 de 4 items deberían tocar una pared lateral, solo ' + touchWall.length + ' tocan');
+  });
+}
+
 // ─── Tests por tipo de mueble ─────────────────────────────────────────────────
 console.log('\nTests por tipo de mueble');
 for (const furn of FURNITURE) {
