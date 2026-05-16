@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { findBestPos, fullPack, fmtV, getCounts } from './packing.js';
+import { calculateSwapOptions } from './swapCalculator.js';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
 
@@ -121,6 +122,7 @@ export default function App(){
   const [pendingStrat,setPendingStrat]=useState(null);
   const [pendingAdd,setPendingAdd]=useState(null);
   const [showReorgConfirm,setShowReorgConfirm]=useState(false);
+  const [swapOptions,setSwapOptions]=useState(null);
   const [holdAction,setHoldAction]=useState(null);
   const [simMode,setSimMode]=useState(false);
   const [simStep,setSimStep]=useState(0);
@@ -178,22 +180,15 @@ export default function App(){
     setPlaced([...placed,newItem]);
   },[items,placed,packMode]);
 
-  // Runs after user confirms the reorganize popup
-  const confirmAdd=useCallback(()=>{
+  const handleSwapConfirm=useCallback(()=>{
     if(!pendingAdd)return;
-    const{id}=pendingAdd;
-    setPendingAdd(null);
+    const{id,itemName}=pendingAdd;
     const it=items.find(x=>x.id===id);
-    if(!it||it.load>=it.inv)return;
-    const newItems=items.map(x=>x.id===id?{...x,load:x.load+1}:x);
-    const{placed:newP}=fullPack(newItems,TR,packMode);
-    const newC=getCounts(newP);
-    if((newC[id]||0)<=it.load)return;
-    const displaced=[];
-    for(const x of items){if(x.id===id||x.load===0)continue;const oc=pkC[x.id]||0;const nc=newC[x.id]||0;if(nc<oc)displaced.push({id:x.id,name:x.name,lost:oc-nc,oldC:oc,newC:nc});}
-    if(displaced.length>0){setConflict({id,itemName:it.name,displaced,newItems,newP});}
-    else{setItems(newItems);setPlaced(newP);}
-  },[pendingAdd,items,pkC,packMode]);
+    setPendingAdd(null);
+    if(!it)return;
+    const opts=calculateSwapOptions(it,items,placed,TR);
+    setSwapOptions({itemName,options:opts,noOptions:opts.length===0});
+  },[pendingAdd,items,placed]);
 
   // REMOVE: just remove the last placed item of this type, no repack
   const removeOne=useCallback((id)=>{
@@ -336,9 +331,37 @@ export default function App(){
             <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🔄 Reorganizar carga</div>
             <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"#06B6D4"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={confirmAdd} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+              <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
               <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>No, dejarlo así</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SWAP OPTIONS */}
+      {swapOptions&&(
+        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:360,width:"100%",border:"1px solid #06B6D444"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#06B6D4",marginBottom:4}}>🔄 Opciones de intercambio</div>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>, puedes:</p>
+            {swapOptions.noOptions?(
+              <div style={{fontSize:12,color:"#EF4444",background:"#0F172A",borderRadius:8,padding:"10px 12px",marginBottom:12}}>No se encontraron intercambios posibles.</div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
+                {swapOptions.options.map((opt,i)=>(
+                  <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:"1px solid #334155",borderRadius:8,cursor:"pointer",width:"100%"}}>
+                    <div style={{width:6,height:36,borderRadius:3,background:opt.removeColor,flexShrink:0}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:11,fontWeight:600,color:"#F8FAFC"}}>Quitar {opt.removeCount} {opt.removeName}</div>
+                      <div style={{fontSize:10,color:"#64748B",marginTop:2,fontFamily:"JetBrains Mono"}}>
+                        {fmtV(opt.removeVol)} liberados → {fmtV(Math.abs(opt.volumeDiff))} extra
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
           </div>
         </div>
       )}

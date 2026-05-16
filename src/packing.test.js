@@ -1,4 +1,5 @@
 import { getRots, hmapGetZ, supportRatio, findBestPos, fullPack } from './packing.js';
+import { calculateSwapOptions } from './swapCalculator.js';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
 
@@ -326,6 +327,22 @@ console.log('\nTests: simulador de carga');
     ];
     const seq = computeLoadingOrder(placed);
     assert(seq.length === 3, 'secuencia debería tener 3 pasos');
+  });
+}
+
+// ─── Test: calculateSwapOptions ──────────────────────────────────────────────
+console.log('\nTests: intercambio inteligente');
+{
+  test('Swap: encuentra opciones válidas', () => {
+    const items = [
+      {id:4,name:"Buró",inv:32,ancho:65,alto:65,fondo:40,color:"#F2CC8F",load:32},
+      {id:9,name:"Base Queen",inv:34,ancho:150,alto:36,fondo:199.5,color:"#0F4C5C",load:2},
+    ];
+    const {placed} = fullPack(items, TR, 'free');
+    const itemToAdd = {id:1,name:"Tocador",ancho:122.5,alto:89.5,fondo:42,color:"#E07A5F",load:0};
+    const opts = calculateSwapOptions(itemToAdd, items, placed, TR);
+    assert(opts.length > 0, 'debería encontrar al menos 1 opción de intercambio');
+    assert(opts[0].removeCount >= 1, 'debería quitar al menos 1 item');
   });
 }
 
