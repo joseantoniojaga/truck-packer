@@ -45,6 +45,23 @@ export function supportRatio(x, y, l, w, z, placed) {
 // itemId: when set, items of the same type at the same (x,y) get a -5e7 stacking bonus
 export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null) {
   const rs = getRots(...dims);
+
+  // Priorizar la rotación que ya usan items del mismo tipo
+  const sameType = placed.filter(p => p.id === itemId);
+  if (sameType.length > 0) {
+    const rotCounts = {};
+    for (const p of sameType) {
+      const key = [p.l, p.w, p.h].sort((a, b) => b - a).join('-');
+      rotCounts[key] = (rotCounts[key] || 0) + 1;
+    }
+    const mostCommonKey = Object.entries(rotCounts).sort((a, b) => b[1] - a[1])[0][0];
+    const matchIdx = rs.findIndex(r => [r.l, r.w, r.h].sort((a, b) => b - a).join('-') === mostCommonKey);
+    if (matchIdx > 0) {
+      const [match] = rs.splice(matchIdx, 1);
+      rs.unshift(match);
+    }
+  }
+
   const xs = new Set([0]);
   const ys = new Set([0]);
   for (const p of placed) {
@@ -76,10 +93,14 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
         if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
         const sameTypeAtXY = itemId !== null &&
           placed.some(p => p.id === itemId && Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
+        const sameRotation = sameType.some(p =>
+          Math.abs(p.l - rot.l) < 0.5 && Math.abs(p.w - rot.w) < 0.5 && Math.abs(p.h - rot.h) < 0.5
+        );
         let score = mode === "backToFront"
           ? x * 1e8 + z * 1e4 + y
           : z * 1e6 + x * 1e3 + y;
         if (sameTypeAtXY) score -= 5e7;
+        if (sameRotation) score -= 3e7;
         if (!best || score < best.score) {
           best = { x, y, z, l: rot.l, w: rot.w, h: rot.h, score };
         }
