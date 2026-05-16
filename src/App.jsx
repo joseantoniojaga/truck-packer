@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { findBestPos, fullPack, fmtV, getCounts } from './packing.js';
-import { calculateSwapOptions } from './swapCalculator.js';
+import { calculateSwapOptions } from './swapCalculator';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
 
@@ -183,12 +183,12 @@ export default function App(){
   const handleSwapConfirm=useCallback(()=>{
     if(!pendingAdd)return;
     const{id,itemName}=pendingAdd;
-    const it=items.find(x=>x.id===id);
+    const itemToAdd=items.find(x=>x.id===id);
     setPendingAdd(null);
-    if(!it)return;
-    const opts=calculateSwapOptions(it,items,placed,TR);
-    setSwapOptions({itemName,options:opts,noOptions:opts.length===0});
-  },[pendingAdd,items,placed]);
+    if(!itemToAdd)return;
+    const opts=calculateSwapOptions(itemToAdd,items,placed,TR,packMode);
+    setSwapOptions({itemName,itemId:id,options:opts});
+  },[pendingAdd,items,placed,packMode]);
 
   // REMOVE: just remove the last placed item of this type, no repack
   const removeOne=useCallback((id)=>{
@@ -342,26 +342,32 @@ export default function App(){
       {swapOptions&&(
         <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
           <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:360,width:"100%",border:"1px solid #06B6D444"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#06B6D4",marginBottom:4}}>🔄 Opciones de intercambio</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>, puedes:</p>
-            {swapOptions.noOptions?(
-              <div style={{fontSize:12,color:"#EF4444",background:"#0F172A",borderRadius:8,padding:"10px 12px",marginBottom:12}}>No se encontraron intercambios posibles.</div>
+            {swapOptions.options.length===0?(
+              <>
+                <div style={{fontSize:14,fontWeight:700,color:"#EF4444",marginBottom:10}}>❌ Sin opciones</div>
+                <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>.</p>
+                <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Entendido</button>
+              </>
             ):(
-              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
-                {swapOptions.options.map((opt,i)=>(
-                  <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:"1px solid #334155",borderRadius:8,cursor:"pointer",width:"100%"}}>
-                    <div style={{width:6,height:36,borderRadius:3,background:opt.removeColor,flexShrink:0}}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:11,fontWeight:600,color:"#F8FAFC"}}>Quitar {opt.removeCount} {opt.removeName}</div>
-                      <div style={{fontSize:10,color:"#64748B",marginTop:2,fontFamily:"JetBrains Mono"}}>
-                        {fmtV(opt.removeVol)} liberados → {fmtV(Math.abs(opt.volumeDiff))} extra
+              <>
+                <div style={{fontSize:14,fontWeight:700,color:"#06B6D4",marginBottom:4}}>🔄 Elige qué quitar</div>
+                <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>, elige una opción:</p>
+                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
+                  {swapOptions.options.map((opt,i)=>(
+                    <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:"1px solid #334155",borderRadius:8,cursor:"pointer",width:"100%"}}>
+                      <div style={{width:12,height:12,borderRadius:2,background:opt.removeColor,flexShrink:0}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:11,fontWeight:600,color:"#F8FAFC"}}>Quitar {opt.removeCount} {opt.removeName}</div>
+                        <div style={{fontSize:10,color:"#64748B",marginTop:2,fontFamily:"JetBrains Mono"}}>
+                          Libera {fmtV(opt.removeTotalVol)} de espacio
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+              </>
             )}
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
           </div>
         </div>
       )}
