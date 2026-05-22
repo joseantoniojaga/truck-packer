@@ -5,6 +5,7 @@ import { calculateSwapOptions } from './swapCalculator';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
 import Modal from './components/Modal.jsx';
+import { COLORS } from './constants.js';
 
 const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
 const TV = TR.largo*TR.ancho*TR.alto;
@@ -53,7 +54,7 @@ function Viewer3D({placed,selId,stRef,onZoomIn,onZoomOut,simMode,simStep}){
       m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:isCurrent?"#ffffff":p.color})));s.add(m);
     });
   },[placed,selId,simMode,simStep]);
-  const BZ={width:32,height:32,borderRadius:"50%",background:"#1E293B",border:"1px solid #334155",color:"#fff",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,lineHeight:1};
+  const BZ={width:32,height:32,borderRadius:"50%",background:COLORS.card,border:`1px solid ${COLORS.border}`,color:"#fff",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,lineHeight:1};
   return(
     <div style={{position:"relative",width:"100%",borderRadius:6,overflow:"hidden"}}>
       <div ref={mRef} style={{width:"100%"}}/>
@@ -75,7 +76,7 @@ function OV({placed,vk,selId,onSel}){
   if(vk==="right"){const s=new Map();for(const p of placed){const k=`${Math.round(p.x/5)}-${Math.round(p.z/5)}`;if(!s.has(k)||p.y>s.get(k).y)s.set(k,p);}list=Array.from(s.values());}
   if(vk==="left"){const s=new Map();for(const p of placed){const k=`${Math.round(p.x/5)}-${Math.round(p.z/5)}`;if(!s.has(k)||p.y<s.get(k).y)s.set(k,p);}list=Array.from(s.values());}
   return(<div style={{flex:1,minWidth:"48%"}}><div style={{fontSize:9,color:"#64748B",marginBottom:2,fontWeight:600,textAlign:"center"}}>{lb[vk]}</div>
-    <div style={{position:"relative",width:"100%",paddingBottom:`${a[vk]}%`,background:"#080E1A",borderRadius:4,border:"1px solid #1E293B",overflow:"hidden"}}>
+    <div style={{position:"relative",width:"100%",paddingBottom:`${a[vk]}%`,background:"#080E1A",borderRadius:4,border:`1px solid ${COLORS.card}`,overflow:"hidden"}}>
       {list.map((p,i)=>{const c=gc(p);if(c.w<0.3||c.h<0.3)return null;const is=selId===p.id;
         return(<div key={i} onClick={e=>{e.stopPropagation();onSel(p.id);}} style={{position:"absolute",left:`${c.x}%`,top:`${c.y}%`,width:`${c.w}%`,height:`${c.h}%`,background:is?p.color:p.color+"88",border:`1px solid ${p.color}`,borderRadius:1,cursor:"pointer",opacity:is?1:0.75,zIndex:is?10:1,boxShadow:is?`0 0 0 2px ${p.color}`:"none"}} title={p.name}/>);})}
     </div></div>);
@@ -112,10 +113,10 @@ export default function App(){
   const simPlayRef=useRef(null);
 
   useEffect(()=>{
-    document.body.style.background="#0B1121";
+    document.body.style.background=COLORS.bg;
     document.body.style.margin="0";
     document.body.style.padding="0";
-    document.documentElement.style.background="#0B1121";
+    document.documentElement.style.background=COLORS.bg;
   },[]);
 
   const stRef=useRef({th:Math.PI/4,ph:Math.PI/3,r:1400,dr:false,lx:0,ly:0});
@@ -240,10 +241,10 @@ export default function App(){
 
   const sel=selId?items.find(a=>a.id===selId):null;
   const selVol=sel?sel.ancho*sel.alto*sel.fondo:0;
-  const B={borderRadius:5,border:"1px solid #334155",background:"#0F172A",cursor:"pointer",fontFamily:"DM Sans",fontWeight:600};
+  const B={borderRadius:5,border:`1px solid ${COLORS.border}`,background:"#0F172A",cursor:"pointer",fontFamily:"DM Sans",fontWeight:600};
 
   return(
-    <div className="tp-root" style={{fontFamily:"'DM Sans',sans-serif",background:"#0B1121",color:"#E8E6DF",position:"relative"}}>
+    <div className="tp-root" style={{fontFamily:"'DM Sans',sans-serif",background:COLORS.bg,color:"#E8E6DF",position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
       <style>{`
         .tp-root{height:100vh;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;}
@@ -259,46 +260,46 @@ export default function App(){
       `}</style>
 
       {/* CONFLICT */}
-      <Modal open={!!conflict} onClose={()=>setConflict(null)} title="⚠ Conflicto de espacio" titleColor="#F59E0B" accentColor="#F59E0B44">
+      <Modal open={!!conflict} onClose={()=>setConflict(null)} title="⚠ Conflicto de espacio" titleColor={COLORS.amber} accentColor={COLORS.amber+"44"}>
         {conflict&&(<>
-          <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 10px"}}>No hay hueco disponible para <b style={{color:"#06B6D4"}}>{conflict.itemName}</b>. Reorganizar desplazaría:</p>
+          <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 10px"}}>No hay hueco disponible para <b style={{color:COLORS.cyan}}>{conflict.itemName}</b>. Reorganizar desplazaría:</p>
           {conflict.displaced.map(d=>(
             <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"#0F172A",borderRadius:6,marginBottom:4,fontSize:12}}>
-              <span>{d.name}</span><span style={{color:"#EF4444",fontFamily:"JetBrains Mono"}}>{d.oldC}→{d.newC} (−{d.lost})</span>
+              <span>{d.name}</span><span style={{color:COLORS.red,fontFamily:"JetBrains Mono"}}>{d.oldC}→{d.newC} (−{d.lost})</span>
             </div>
           ))}
           <div style={{display:"flex",gap:8,marginTop:12}}>
-            <button onClick={()=>{setItems(conflict.newItems);setPlaced(conflict.newP);setConflict(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Reorganizar</button>
-            <button onClick={()=>setConflict(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            <button onClick={()=>{setItems(conflict.newItems);setPlaced(conflict.newP);setConflict(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.amber,borderColor:COLORS.amber+"44"}}>Reorganizar</button>
+            <button onClick={()=>setConflict(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>Cancelar</button>
           </div>
         </>)}
       </Modal>
 
       {/* MODE SWITCH CONFIRM */}
-      <Modal open={!!modeSwitchTarget} onClose={()=>setModeSwitchTarget(null)} title="⚠ Cambiar modo de acomodo" titleColor="#F59E0B" accentColor="#F59E0B44">
+      <Modal open={!!modeSwitchTarget} onClose={()=>setModeSwitchTarget(null)} title="⚠ Cambiar modo de acomodo" titleColor={COLORS.amber} accentColor={COLORS.amber+"44"}>
         <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Sí, cambiar</button>
-          <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+          <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.amber,borderColor:COLORS.amber+"44"}}>Sí, cambiar</button>
+          <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>Cancelar</button>
         </div>
       </Modal>
 
       {/* STRATEGY CONFIRM */}
-      <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title="🧠 Aplicar estrategia" titleColor="#F59E0B" accentColor="#F59E0B44">
+      <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title="🧠 Aplicar estrategia" titleColor={COLORS.amber} accentColor={COLORS.amber+"44"}>
         <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
-          <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+          <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.cyan,borderColor:COLORS.cyan+"44"}}>Sí, reorganizar</button>
+          <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>Cancelar</button>
         </div>
       </Modal>
 
       {/* REORGANIZE ADD CONFIRM */}
-      <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title="🔄 Reorganizar carga" titleColor="#F59E0B" accentColor="#F59E0B44">
+      <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title="🔄 Reorganizar carga" titleColor={COLORS.amber} accentColor={COLORS.amber+"44"}>
         {pendingAdd&&(<>
-          <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"#06B6D4"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
+          <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:COLORS.cyan}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
-            <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>No, dejarlo así</button>
+            <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.cyan,borderColor:COLORS.cyan+"44"}}>Sí, reorganizar</button>
+            <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>No, dejarlo así</button>
           </div>
         </>)}
       </Modal>
@@ -308,24 +309,24 @@ export default function App(){
         open={!!swapOptions}
         onClose={()=>setSwapOptions(null)}
         title={swapOptions?(swapOptions.options.length===0?"❌ Sin opciones":"🔄 Elige qué quitar"):""}
-        titleColor={swapOptions&&swapOptions.options.length===0?"#EF4444":"#06B6D4"}
-        accentColor="#06B6D444"
+        titleColor={swapOptions&&swapOptions.options.length===0?COLORS.red:COLORS.cyan}
+        accentColor={COLORS.cyan+"44"}
         maxWidth={360}
       >
         {swapOptions&&(swapOptions.options.length===0?(
           <>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>.</p>
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Entendido</button>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:COLORS.cyan}}>{swapOptions.itemName}</b>.</p>
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>Entendido</button>
           </>
         ):(
           <>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>, elige una opción:</p>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:COLORS.cyan}}>{swapOptions.itemName}</b>, elige una opción:</p>
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
               {swapOptions.options.map((opt,i)=>(
-                <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:"1px solid #334155",borderRadius:8,cursor:"pointer",width:"100%"}}>
+                <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:`1px solid ${COLORS.border}`,borderRadius:8,cursor:"pointer",width:"100%"}}>
                   <div style={{width:12,height:12,borderRadius:2,background:opt.removeColor,flexShrink:0}}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:11,fontWeight:600,color:"#F8FAFC"}}>Quitar {opt.removeCount} {opt.removeName}</div>
+                    <div style={{fontSize:11,fontWeight:600,color:COLORS.text}}>Quitar {opt.removeCount} {opt.removeName}</div>
                     <div style={{fontSize:10,color:"#64748B",marginTop:2,fontFamily:"JetBrains Mono"}}>
                       Libera {fmtV(opt.removeTotalVol)} de espacio
                     </div>
@@ -333,17 +334,17 @@ export default function App(){
                 </button>
               ))}
             </div>
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>Cancelar</button>
           </>
         ))}
       </Modal>
 
       {/* REORG CONFIRM */}
-      <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title="🔄 Reorganizar carga" titleColor="#06B6D4" accentColor="#06B6D444">
+      <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title="🔄 Reorganizar carga" titleColor={COLORS.cyan} accentColor={COLORS.cyan+"44"}>
         <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
-          <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+          <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.cyan,borderColor:COLORS.cyan+"44"}}>Sí, reorganizar</button>
+          <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:11,color:COLORS.green,borderColor:COLORS.green+"44"}}>Cancelar</button>
         </div>
       </Modal>
 
@@ -351,7 +352,7 @@ export default function App(){
       <div className="tp-header">
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
           <span style={{fontSize:20}}>🚛</span>
-          <h1 style={{margin:0,fontSize:17,fontWeight:700,color:"#F8FAFC"}}>Calculadora de Carga</h1>
+          <h1 style={{margin:0,fontSize:17,fontWeight:700,color:COLORS.text}}>Calculadora de Carga</h1>
         </div>
         <p style={{margin:0,fontSize:10,color:"#64748B"}}>Tráiler 16.15m × 2.47m × 2.80m · {TR.placas} · {fmtV(TV)}</p>
       </div>
@@ -362,39 +363,39 @@ export default function App(){
         {/* ── IZQUIERDA: controles (35%) ── */}
         <div className="tp-left">
 
-          <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:10}}>
+          <div style={{background:COLORS.card,borderRadius:8,padding:10,marginBottom:10}}>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5}}>
-              <span style={{color:"#94A3B8"}}>📦 {placed.length} colocadas / {tLoad} pedidas</span>
-              <span style={{fontFamily:"JetBrains Mono",fontWeight:600,color:util>85?"#EF4444":util>60?"#F59E0B":"#34D399"}}>{util.toFixed(1)}%</span>
+              <span style={{color:COLORS.muted}}>📦 {placed.length} colocadas / {tLoad} pedidas</span>
+              <span style={{fontFamily:"JetBrains Mono",fontWeight:600,color:util>85?COLORS.red:util>60?COLORS.amber:COLORS.green}}>{util.toFixed(1)}%</span>
             </div>
             <div style={{background:"#0F172A",borderRadius:5,height:18,overflow:"hidden"}}>
-              <div style={{width:`${Math.min(util,100)}%`,height:"100%",background:util>85?"linear-gradient(90deg,#F59E0B,#EF4444)":"linear-gradient(90deg,#06B6D4,#34D399)",borderRadius:5,transition:"width 0.4s"}}/>
+              <div style={{width:`${Math.min(util,100)}%`,height:"100%",background:util>85?`linear-gradient(90deg,${COLORS.amber},${COLORS.red})`:`linear-gradient(90deg,${COLORS.cyan},${COLORS.green})`,borderRadius:5,transition:"width 0.4s"}}/>
             </div>
             <div style={{fontSize:10,color:"#64748B",marginTop:4,textAlign:"right"}}>{fmtV(volL)} / {fmtV(TV)}</div>
           </div>
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"#0B1121":"#94A3B8",background:packMode==="free"?"#06B6D4":"#0F172A",borderColor:packMode==="free"?"#06B6D4":"#334155"}}>📦 Libre</button>
-            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"#0B1121":"#94A3B8",background:packMode==="backToFront"?"#06B6D4":"#0F172A",borderColor:packMode==="backToFront"?"#06B6D4":"#334155"}}>🧱 Fondo→Frente</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?COLORS.bg:COLORS.muted,background:packMode==="free"?COLORS.cyan:"#0F172A",borderColor:packMode==="free"?COLORS.cyan:COLORS.border}}>📦 Libre</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?COLORS.bg:COLORS.muted,background:packMode==="backToFront"?COLORS.cyan:"#0F172A",borderColor:packMode==="backToFront"?COLORS.cyan:COLORS.border}}>🧱 Fondo→Frente</button>
           </div>
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"#06B6D4",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:"#06B6D444",opacity:(computing||placed.length===0)?0.5:1}}>
+            <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:COLORS.cyan,display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:COLORS.cyan+"44",opacity:(computing||placed.length===0)?0.5:1}}>
               🔄 Reorganizar
             </button>
-            <button onClick={startSim} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"#A78BFA",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:"#A78BFA44",opacity:(computing||placed.length===0)?0.5:1}}>
+            <button onClick={startSim} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:COLORS.purple,display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:COLORS.purple+"44",opacity:(computing||placed.length===0)?0.5:1}}>
               ▶ Simular
             </button>
           </div>
 
-          <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"#F59E0B",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?"#F59E0B44":"#334155",opacity:computing?0.5:1}}>
+          <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:COLORS.amber,display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?COLORS.amber+"44":COLORS.border,opacity:computing?0.5:1}}>
             {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
           </button>
           {showStrats&&(
-            <div style={{background:"#1E293B",borderRadius:8,padding:10,marginBottom:10,border:"1px solid #F59E0B22"}}>
+            <div style={{background:COLORS.card,borderRadius:8,padding:10,marginBottom:10,border:`1px solid ${COLORS.amber}22`}}>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {STRATS.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"8px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
-                  <span style={{fontSize:16,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:11,color:"#F8FAFC",fontWeight:600}}>{s.label}</div><div style={{fontSize:9,color:"#64748B",fontWeight:400,marginTop:1}}>{s.desc}</div></div>
+                  <span style={{fontSize:16,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:11,color:COLORS.text,fontWeight:600}}>{s.label}</div><div style={{fontSize:9,color:"#64748B",fontWeight:400,marginTop:1}}>{s.desc}</div></div>
                 </button>))}
               </div>
             </div>
@@ -405,47 +406,47 @@ export default function App(){
               <span style={{fontSize:12,fontWeight:700,color:sel.color}}>{sel.name}</span>
               <button onClick={()=>setSelId(null)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:14}}>✕</button>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:10,color:"#94A3B8"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:10,color:COLORS.muted}}>
               <span>Medidas: <b style={{color:"#E8E6DF"}}>{sel.ancho}×{sel.alto}×{sel.fondo}cm</b></span>
               <span>Vol: <b style={{color:"#E8E6DF"}}>{fmtV(selVol)}</b></span>
               <span>Inventario: <b style={{color:"#E8E6DF"}}>{sel.inv}</b></span>
-              <span>A cargar: <b style={{color:"#06B6D4"}}>{sel.load}</b></span>
-              <span>Colocadas: <b style={{color:(pkC[sel.id]||0)>=sel.load?"#34D399":"#F59E0B"}}>{pkC[sel.id]||0}</b></span>
+              <span>A cargar: <b style={{color:COLORS.cyan}}>{sel.load}</b></span>
+              <span>Colocadas: <b style={{color:(pkC[sel.id]||0)>=sel.load?COLORS.green:COLORS.amber}}>{pkC[sel.id]||0}</b></span>
             </div>
           </div>)}
 
-          <div style={{background:"#1E293B",borderRadius:8,padding:10}}>
+          <div style={{background:COLORS.card,borderRadius:8,padding:10}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <span style={{fontSize:12,fontWeight:600,color:"#F8FAFC"}}>Muebles</span>
+              <span style={{fontSize:12,fontWeight:600,color:COLORS.text}}>Muebles</span>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?"#F59E0B":"#94A3B8"}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
-                <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:"#EF4444"}}>Todos a 0</button>
+                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?COLORS.amber:COLORS.muted}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
+                <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:COLORS.red}}>Todos a 0</button>
               </div>
             </div>
             <div style={{display:"flex",gap:8,marginBottom:6,padding:"4px 8px",background:"#0F172A",borderRadius:5,fontSize:9,color:"#64748B"}}>
-              {editMode?<span>Editando <b style={{color:"#F59E0B"}}>inventario</b></span>
-              :<><span style={{fontFamily:"JetBrains Mono",color:"#34D399"}}>colocadas</span><span>/</span><span style={{fontFamily:"JetBrains Mono",color:"#E8E6DF"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
+              {editMode?<span>Editando <b style={{color:COLORS.amber}}>inventario</b></span>
+              :<><span style={{fontFamily:"JetBrains Mono",color:COLORS.green}}>colocadas</span><span>/</span><span style={{fontFamily:"JetBrains Mono",color:"#E8E6DF"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
             </div>
             {items.map(a=>{const pk=pkC[a.id]||0;
               return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",marginBottom:3,background:selId===a.id?"#0F172A":"#13192A",borderRadius:6,cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
                 <div style={{width:4,height:24,borderRadius:3,background:a.color,flexShrink:0}}/>
-                <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:500,color:"#F8FAFC",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
+                <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:500,color:COLORS.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
                   <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
-                {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?"#34D399":"#F59E0B",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
+                {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?COLORS.green:COLORS.amber,minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('invDown',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invDown',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
-                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#F59E0B",minWidth:24,textAlign:"center"}}>{a.inv}</span>
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('invUp',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invUp',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startHold('invDown',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invDown',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.amber,minWidth:24,textAlign:"center"}}>{a.inv}</span>
+                  <button onMouseDown={e=>{e.stopPropagation();startHold('invUp',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invUp',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('remove',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('remove',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
-                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#06B6D4",minWidth:24,textAlign:"center"}}>{a.load}</span>
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('add',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('add',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:"#94A3B8",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();startHold('remove',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('remove',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.cyan,minWidth:24,textAlign:"center"}}>{a.load}</span>
+                  <button onMouseDown={e=>{e.stopPropagation();startHold('add',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('add',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>)}
               </div>);
             })}
           </div>
 
-          <div style={{marginTop:10,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:"#94A3B8",lineHeight:1.5}}>
+          <div style={{marginTop:10,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:COLORS.muted,lineHeight:1.5}}>
             <span style={{fontWeight:600,color:"#CBD5E1"}}>💡</span> <b>+ es incremental:</b> busca el mejor hueco sin mover nada. <b>−</b> quita el último y reorganiza. Las estrategias reorganizan todo para optimizar.
           </div>
 
@@ -455,42 +456,42 @@ export default function App(){
         <div className="tp-right">
 
           <div style={{display:"flex",gap:3,marginBottom:8,flexShrink:0}}>
-            <button onClick={()=>setVM("3d")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="3d"?"#06B6D4":"#1E293B",color:viewMode==="3d"?"#0B1121":"#64748B"}}>🧊 3D</button>
-            <button onClick={()=>setVM("grid")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="grid"?"#06B6D4":"#1E293B",color:viewMode==="grid"?"#0B1121":"#64748B"}}>⊞ 6 Vistas</button>
+            <button onClick={()=>setVM("3d")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="3d"?COLORS.cyan:COLORS.card,color:viewMode==="3d"?COLORS.bg:"#64748B"}}>🧊 3D</button>
+            <button onClick={()=>setVM("grid")} style={{...B,flex:1,padding:"6px 0",borderRadius:6,fontSize:11,background:viewMode==="grid"?COLORS.cyan:COLORS.card,color:viewMode==="grid"?COLORS.bg:"#64748B"}}>⊞ 6 Vistas</button>
           </div>
 
-          {viewMode==="3d"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={simMode?simSequence.map(s=>s.item):placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut} simMode={simMode} simStep={simStep}/>}
+          {viewMode==="3d"&&(<div style={{background:COLORS.card,borderRadius:8,padding:10,flex:1,minHeight:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+            {tLoad===0?<div style={{textAlign:"center",color:COLORS.border,fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={simMode?simSequence.map(s=>s.item):placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut} simMode={simMode} simStep={simStep}/>}
             {simMode?(
-              <div style={{marginTop:8,background:"#0F172A",borderRadius:8,padding:10,border:"1px solid #A78BFA44",flexShrink:0}}>
+              <div style={{marginTop:8,background:"#0F172A",borderRadius:8,padding:10,border:`1px solid ${COLORS.purple}44`,flexShrink:0}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <span style={{fontSize:11,fontWeight:600,color:"#A78BFA"}}>Simulador de carga</span>
-                  <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"#EF4444",borderColor:"#EF444444"}}>✕ Salir</button>
+                  <span style={{fontSize:11,fontWeight:600,color:COLORS.purple}}>Simulador de carga</span>
+                  <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:COLORS.red,borderColor:COLORS.red+"44"}}>✕ Salir</button>
                 </div>
-                <div style={{background:"#1E293B",borderRadius:4,height:6,marginBottom:8,overflow:"hidden"}}>
-                  <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:"linear-gradient(90deg,#A78BFA,#06B6D4)",borderRadius:4,transition:"width 0.3s"}}/>
+                <div style={{background:COLORS.card,borderRadius:4,height:6,marginBottom:8,overflow:"hidden"}}>
+                  <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,${COLORS.purple},${COLORS.cyan})`,borderRadius:4,transition:"width 0.3s"}}/>
                 </div>
                 {simStep>0&&simStep<=simSequence.length&&(
-                  <div style={{fontSize:11,color:"#CBD5E1",marginBottom:8,background:"#1E293B",borderRadius:6,padding:"6px 8px",lineHeight:1.4}}>
-                    <span style={{color:"#A78BFA",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
+                  <div style={{fontSize:11,color:"#CBD5E1",marginBottom:8,background:COLORS.card,borderRadius:6,padding:"6px 8px",lineHeight:1.4}}>
+                    <span style={{color:COLORS.purple,fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
                   </div>
                 )}
                 {simStep===0&&<div style={{fontSize:11,color:"#475569",marginBottom:8}}>Presiona ▶ para avanzar paso a paso</div>}
-                {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:"#34D399",marginBottom:8}}>✓ Carga completa ({simSequence.length} muebles)</div>}
+                {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:COLORS.green,marginBottom:8}}>✓ Carga completa ({simSequence.length} muebles)</div>}
                 <div style={{display:"flex",gap:4,justifyContent:"center"}}>
-                  <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Primer paso">⏮</button>
-                  <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Anterior">◀</button>
-                  <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"#F59E0B":"#A78BFA",borderColor:simPlaying?"#F59E0B44":"#A78BFA44"}}>{simPlaying?"⏸ Pausar":"▶ Auto"}</button>
-                  <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Siguiente">▶</button>
-                  <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:"#94A3B8"}} title="Último paso">⏭</button>
+                  <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:COLORS.muted}} title="Primer paso">⏮</button>
+                  <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:COLORS.muted}} title="Anterior">◀</button>
+                  <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?COLORS.amber:COLORS.purple,borderColor:simPlaying?COLORS.amber+"44":COLORS.purple+"44"}}>{simPlaying?"⏸ Pausar":"▶ Auto"}</button>
+                  <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:COLORS.muted}} title="Siguiente">▶</button>
+                  <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:COLORS.muted}} title="Último paso">⏭</button>
                 </div>
               </div>
             ):(
               <p style={{margin:"6px 0 0",fontSize:9,color:"#475569",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
             )}
           </div>)}
-          {viewMode==="grid"&&(<div style={{background:"#1E293B",borderRadius:8,padding:10,flex:1,minHeight:0,overflowY:"auto"}}>
-            {tLoad===0?<div style={{textAlign:"center",color:"#334155",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(
+          {viewMode==="grid"&&(<div style={{background:COLORS.card,borderRadius:8,padding:10,flex:1,minHeight:0,overflowY:"auto"}}>
+            {tLoad===0?<div style={{textAlign:"center",color:COLORS.border,fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["top","bottom","right","left","front","back"].map(vk=>(<OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId}/>))}</div>)}
           </div>)}
 

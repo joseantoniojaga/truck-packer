@@ -1,3 +1,5 @@
+import { SUPPORT_RATIO_THRESHOLD, GEOMETRIC_TOLERANCE, HEIGHT_TOLERANCE, SCORE_WEIGHTS } from './constants.js';
+
 export function fmtV(c) {
   return c >= 1e6 ? (c/1e6).toFixed(2) + " m³" : Math.round(c).toLocaleString("es-MX") + " cm³";
 }
@@ -23,8 +25,8 @@ export function getRots(a, b, c) {
 export function hmapGetZ(x, y, l, w, placed) {
   let maxZ = 0;
   for (const p of placed) {
-    if (Math.min(x+l, p.x+p.l) - Math.max(x, p.x) > 0.1 &&
-        Math.min(y+w, p.y+p.w) - Math.max(y, p.y) > 0.1) {
+    if (Math.min(x+l, p.x+p.l) - Math.max(x, p.x) > GEOMETRIC_TOLERANCE &&
+        Math.min(y+w, p.y+p.w) - Math.max(y, p.y) > GEOMETRIC_TOLERANCE) {
       if (p.z + p.h > maxZ) maxZ = p.z + p.h;
     }
   }
@@ -64,7 +66,7 @@ export function supportRatio(x, y, l, w, z, placed) {
   let supported = 0;
   const area = l * w;
   for (const p of placed) {
-    if (Math.abs(p.z + p.h - z) > 2) continue;
+    if (Math.abs(p.z + p.h - z) > HEIGHT_TOLERANCE) continue;
     const ox = Math.max(0, Math.min(x+l, p.x+p.l) - Math.max(x, p.x));
     const oy = Math.max(0, Math.min(y+w, p.y+p.w) - Math.max(y, p.y));
     supported += ox * oy;
@@ -72,7 +74,8 @@ export function supportRatio(x, y, l, w, z, placed) {
   return area > 0 ? supported / area : 0;
 }
 
-// itemId: when set, items of the same type at the same (x,y) get a -5e7 stacking bonus
+// itemId: when set, items of the same type at the same (x,y) get a stacking bonus
+//         (SCORE_WEIGHTS.SAME_TYPE_BONUS).
 // hctx: cuando se pasa {hmap, cols, rows, HR}, usa el grid de alturas precalculado
 //       y limita el número de posiciones candidatas (usado por fullPack).
 export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null, hctx = null) {
@@ -112,8 +115,8 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
     xs.add(trailer.largo - rot.l);
     ys.add(trailer.ancho - rot.w);
   }
-  let xArr = [...xs].filter(x => x >= -0.1 && x <= trailer.largo + 0.1);
-  let yArr = [...ys].filter(y => y >= -0.1 && y <= trailer.ancho + 0.1);
+  let xArr = [...xs].filter(x => x >= -GEOMETRIC_TOLERANCE && x <= trailer.largo + GEOMETRIC_TOLERANCE);
+  let yArr = [...ys].filter(y => y >= -GEOMETRIC_TOLERANCE && y <= trailer.ancho + GEOMETRIC_TOLERANCE);
   // Con grid: limitar candidatos para evitar explosión cuadrática
   if (hctx) {
     xArr = [...xs].filter(x => x >= 0 && x <= trailer.largo).sort((a,b) => a-b).slice(0, 50);
@@ -122,24 +125,24 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
   let best = null;
   for (const rot of rs) {
     for (const x of xArr) {
-      if (x + rot.l > trailer.largo + 0.1) continue;
+      if (x + rot.l > trailer.largo + GEOMETRIC_TOLERANCE) continue;
       for (const y of yArr) {
-        if (y + rot.w > trailer.ancho + 0.1) continue;
+        if (y + rot.w > trailer.ancho + GEOMETRIC_TOLERANCE) continue;
         const z = hctx
           ? hmapQueryMax(hctx.hmap, x, y, rot.l, rot.w, hctx.cols, hctx.rows, hctx.HR)
           : hmapGetZ(x, y, rot.l, rot.w, placed);
-        if (z + rot.h > trailer.alto + 0.1) continue;
-        if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
+        if (z + rot.h > trailer.alto + GEOMETRIC_TOLERANCE) continue;
+        if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < SUPPORT_RATIO_THRESHOLD) continue;
         const sameTypeAtXY = itemId !== null &&
           placed.some(p => p.id === itemId && Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
         const sameRotation = sameType.some(p =>
           Math.abs(p.l - rot.l) < 0.5 && Math.abs(p.w - rot.w) < 0.5 && Math.abs(p.h - rot.h) < 0.5
         );
         let score = mode === "backToFront"
-          ? x * 1e8 + z * 1e4 + y
-          : z * 1e6 + x * 1e3 + y;
-        if (sameTypeAtXY) score -= 5e7;
-        if (sameRotation) score -= 3e7;
+          ? x * SCORE_WEIGHTS.X_BACK_TO_FRONT + z * SCORE_WEIGHTS.Z_BACK_TO_FRONT + y
+          : z * SCORE_WEIGHTS.Z_FREE + x * SCORE_WEIGHTS.X_FREE + y;
+        if (sameTypeAtXY) score += SCORE_WEIGHTS.SAME_TYPE_BONUS;
+        if (sameRotation) score += SCORE_WEIGHTS.SAME_ROTATION_BONUS;
         if (!best || score < best.score) {
           best = { x, y, z, l: rot.l, w: rot.w, h: rot.h, score };
         }
@@ -183,9 +186,9 @@ export function fullPack(items, trailer, mode = "backToFront", sortFn) {
       if (type.remaining <= 0) continue;
       const rots = getRots(type.ancho, type.alto, type.fondo);
       for (const rot of rots) {
-        if (curX + rot.l > trailer.largo + 0.1) continue;
-        if (rot.w > trailer.ancho + 0.1) continue;
-        if (rot.h > trailer.alto + 0.1) continue;
+        if (curX + rot.l > trailer.largo + GEOMETRIC_TOLERANCE) continue;
+        if (rot.w > trailer.ancho + GEOMETRIC_TOLERANCE) continue;
+        if (rot.h > trailer.alto + GEOMETRIC_TOLERANCE) continue;
 
         const nW = Math.floor(trailer.ancho / rot.w);
         const nH = Math.floor(trailer.alto / rot.h);
@@ -231,8 +234,8 @@ export function fullPack(items, trailer, mode = "backToFront", sortFn) {
       for (let hi = 0; hi < nH && count < bestType.remaining; hi++) {
         const y = wi * bestRot.w;
         const z = hi * bestRot.h;
-        if (y + bestRot.w > trailer.ancho + 0.1) continue;
-        if (z + bestRot.h > trailer.alto + 0.1) continue;
+        if (y + bestRot.w > trailer.ancho + GEOMETRIC_TOLERANCE) continue;
+        if (z + bestRot.h > trailer.alto + GEOMETRIC_TOLERANCE) continue;
         placed.push({
           id: bestType.id, name: bestType.name, color: bestType.color,
           x: curX, y, z,
