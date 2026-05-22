@@ -4,6 +4,7 @@ import { findBestPos, fullPack, fmtV, getCounts, quickStrat } from './packing.js
 import { calculateSwapOptions } from './swapCalculator';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
+import Modal from './components/Modal.jsx';
 
 const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
 const TV = TR.largo*TR.ancho*TR.alto;
@@ -258,113 +259,93 @@ export default function App(){
       `}</style>
 
       {/* CONFLICT */}
-      {conflict&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>⚠ Conflicto de espacio</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 10px"}}>No hay hueco disponible para <b style={{color:"#06B6D4"}}>{conflict.itemName}</b>. Reorganizar desplazaría:</p>
-            {conflict.displaced.map(d=>(
-              <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"#0F172A",borderRadius:6,marginBottom:4,fontSize:12}}>
-                <span>{d.name}</span><span style={{color:"#EF4444",fontFamily:"JetBrains Mono"}}>{d.oldC}→{d.newC} (−{d.lost})</span>
-              </div>
-            ))}
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <button onClick={()=>{setItems(conflict.newItems);setPlaced(conflict.newP);setConflict(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Reorganizar</button>
-              <button onClick={()=>setConflict(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+      <Modal open={!!conflict} onClose={()=>setConflict(null)} title="⚠ Conflicto de espacio" titleColor="#F59E0B" accentColor="#F59E0B44">
+        {conflict&&(<>
+          <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 10px"}}>No hay hueco disponible para <b style={{color:"#06B6D4"}}>{conflict.itemName}</b>. Reorganizar desplazaría:</p>
+          {conflict.displaced.map(d=>(
+            <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"#0F172A",borderRadius:6,marginBottom:4,fontSize:12}}>
+              <span>{d.name}</span><span style={{color:"#EF4444",fontFamily:"JetBrains Mono"}}>{d.oldC}→{d.newC} (−{d.lost})</span>
             </div>
+          ))}
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            <button onClick={()=>{setItems(conflict.newItems);setPlaced(conflict.newP);setConflict(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Reorganizar</button>
+            <button onClick={()=>setConflict(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
           </div>
-        </div>
-      )}
+        </>)}
+      </Modal>
 
       {/* MODE SWITCH CONFIRM */}
-      {modeSwitchTarget&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>⚠ Cambiar modo de acomodo</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Sí, cambiar</button>
-              <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
-            </div>
-          </div>
+      <Modal open={!!modeSwitchTarget} onClose={()=>setModeSwitchTarget(null)} title="⚠ Cambiar modo de acomodo" titleColor="#F59E0B" accentColor="#F59E0B44">
+        <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#F59E0B",borderColor:"#F59E0B44"}}>Sí, cambiar</button>
+          <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
         </div>
-      )}
+      </Modal>
 
       {/* STRATEGY CONFIRM */}
-      {pendingStrat&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🧠 Aplicar estrategia</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
-              <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
-            </div>
-          </div>
+      <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title="🧠 Aplicar estrategia" titleColor="#F59E0B" accentColor="#F59E0B44">
+        <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+          <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
         </div>
-      )}
+      </Modal>
 
       {/* REORGANIZE ADD CONFIRM */}
-      {pendingAdd&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #F59E0B44"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#F59E0B",marginBottom:10}}>🔄 Reorganizar carga</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"#06B6D4"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
-              <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>No, dejarlo así</button>
-            </div>
+      <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title="🔄 Reorganizar carga" titleColor="#F59E0B" accentColor="#F59E0B44">
+        {pendingAdd&&(<>
+          <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"#06B6D4"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+            <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>No, dejarlo así</button>
           </div>
-        </div>
-      )}
+        </>)}
+      </Modal>
 
       {/* SWAP OPTIONS */}
-      {swapOptions&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:360,width:"100%",border:"1px solid #06B6D444"}}>
-            {swapOptions.options.length===0?(
-              <>
-                <div style={{fontSize:14,fontWeight:700,color:"#EF4444",marginBottom:10}}>❌ Sin opciones</div>
-                <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>.</p>
-                <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Entendido</button>
-              </>
-            ):(
-              <>
-                <div style={{fontSize:14,fontWeight:700,color:"#06B6D4",marginBottom:4}}>🔄 Elige qué quitar</div>
-                <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>, elige una opción:</p>
-                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
-                  {swapOptions.options.map((opt,i)=>(
-                    <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:"1px solid #334155",borderRadius:8,cursor:"pointer",width:"100%"}}>
-                      <div style={{width:12,height:12,borderRadius:2,background:opt.removeColor,flexShrink:0}}/>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:11,fontWeight:600,color:"#F8FAFC"}}>Quitar {opt.removeCount} {opt.removeName}</div>
-                        <div style={{fontSize:10,color:"#64748B",marginTop:2,fontFamily:"JetBrains Mono"}}>
-                          Libera {fmtV(opt.removeTotalVol)} de espacio
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <Modal
+        open={!!swapOptions}
+        onClose={()=>setSwapOptions(null)}
+        title={swapOptions?(swapOptions.options.length===0?"❌ Sin opciones":"🔄 Elige qué quitar"):""}
+        titleColor={swapOptions&&swapOptions.options.length===0?"#EF4444":"#06B6D4"}
+        accentColor="#06B6D444"
+        maxWidth={360}
+      >
+        {swapOptions&&(swapOptions.options.length===0?(
+          <>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>.</p>
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Entendido</button>
+          </>
+        ):(
+          <>
+            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"#06B6D4"}}>{swapOptions.itemName}</b>, elige una opción:</p>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
+              {swapOptions.options.map((opt,i)=>(
+                <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:"1px solid #334155",borderRadius:8,cursor:"pointer",width:"100%"}}>
+                  <div style={{width:12,height:12,borderRadius:2,background:opt.removeColor,flexShrink:0}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:600,color:"#F8FAFC"}}>Quitar {opt.removeCount} {opt.removeName}</div>
+                    <div style={{fontSize:10,color:"#64748B",marginTop:2,fontFamily:"JetBrains Mono"}}>
+                      Libera {fmtV(opt.removeTotalVol)} de espacio
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
+          </>
+        ))}
+      </Modal>
 
       {/* REORG CONFIRM */}
-      {showReorgConfirm&&(
-        <div style={{position:"fixed",inset:0,background:"#000000CC",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"#1E293B",borderRadius:12,padding:16,maxWidth:340,width:"100%",border:"1px solid #06B6D444"}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#06B6D4",marginBottom:10}}>🔄 Reorganizar carga</div>
-            <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
-              <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
-            </div>
-          </div>
+      <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title="🔄 Reorganizar carga" titleColor="#06B6D4" accentColor="#06B6D444">
+        <p style={{fontSize:12,color:"#CBD5E1",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#06B6D4",borderColor:"#06B6D444"}}>Sí, reorganizar</button>
+          <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"#34D399",borderColor:"#34D39944"}}>Cancelar</button>
         </div>
-      )}
+      </Modal>
 
       {/* ── HEADER (ancho completo) ── */}
       <div className="tp-header">
