@@ -172,3 +172,34 @@ export function fullPack(items, trailer, mode = "backToFront") {
   }
   return { placed };
 }
+
+// Calcula las cargas de una estrategia con UN solo fullPack: pone todos los
+// tipos al inventario máximo y deja que fullPack decida cuántos caben.
+export function quickStrat(key, items, trailer, mode) {
+  const sorted = items.map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo, load: 0 }));
+
+  if (key === "max_pieces") sorted.sort((a, b) => a.vol - b.vol);
+  else if (key === "max_volume") sorted.sort((a, b) => b.vol - a.vol);
+  else if (key === "big_first") sorted.sort((a, b) => Math.max(b.ancho, b.alto, b.fondo) - Math.max(a.ancho, a.alto, a.fondo));
+  else if (key === "flat_first") sorted.sort((a, b) => Math.min(a.ancho, a.alto, a.fondo) - Math.min(b.ancho, b.alto, b.fondo));
+  else sorted.sort((a, b) => b.vol - a.vol);
+
+  if (key === "balanced") {
+    const maxItems = items.map(it => ({ ...it, load: it.inv }));
+    const { placed } = fullPack(maxItems, trailer, mode);
+    const counts = getCounts(placed);
+    return items.map(it => ({ ...it, load: counts[it.id] || 0 }));
+  }
+
+  // Otras estrategias: cargar cada tipo al inventario máximo en orden de
+  // prioridad; un único fullPack determina cuántos caben de cada uno.
+  const result = items.map(it => ({ ...it, load: 0 }));
+  for (const s of sorted) {
+    const idx = result.findIndex(r => r.id === s.id);
+    if (idx < 0) continue;
+    result[idx].load = s.inv;
+  }
+  const { placed } = fullPack(result, trailer, mode);
+  const counts = getCounts(placed);
+  return result.map(it => ({ ...it, load: counts[it.id] || 0 }));
+}

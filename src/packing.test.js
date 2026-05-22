@@ -1,4 +1,4 @@
-import { getRots, hmapGetZ, supportRatio, findBestPos, fullPack } from './packing.js';
+import { getRots, hmapGetZ, supportRatio, findBestPos, fullPack, quickStrat } from './packing.js';
 import { calculateSwapOptions } from './swapCalculator.js';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
@@ -369,6 +369,17 @@ console.log('\nTests: performance');
     const elapsed = Date.now() - start;
     console.log('  fullPack 200 burós: ' + elapsed + 'ms, colocó ' + placed.length);
     assert(elapsed < 3000, 'fullPack tardó ' + elapsed + 'ms, debería ser < 3000ms');
+  });
+
+  test('Performance: quickStrat tarda menos de 2 segundos', () => {
+    const items = FURNITURE.map(f => ({id:f.id, name:f.name, inv:f.inv, ancho:f.ancho, alto:f.alto, fondo:f.fondo, color:f.color, load:0}));
+    const start = Date.now();
+    const result = quickStrat('max_volume', items, {largo:1615.4,ancho:247,alto:280}, 'free');
+    const elapsed = Date.now() - start;
+    const totalLoaded = result.reduce((s,r) => s + r.load, 0);
+    console.log('  quickStrat max_volume: ' + elapsed + 'ms, ' + totalLoaded + ' items');
+    assert(elapsed < 2000, 'quickStrat tardó ' + elapsed + 'ms');
+    assert(totalLoaded > 0, 'debería colocar al menos algunos items');
   });
 }
 

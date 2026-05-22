@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { findBestPos, fullPack, fmtV, getCounts } from './packing.js';
+import { findBestPos, fullPack, fmtV, getCounts, quickStrat } from './packing.js';
 import { calculateSwapOptions } from './swapCalculator';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
@@ -87,60 +87,6 @@ const STRATS=[
   {key:"flat_first",icon:"📐",label:"Planos primero",desc:"Apila lo plano"},
   {key:"balanced",icon:"⚖️",label:"Balanceado",desc:"Reparte entre todos"},
 ];
-
-function applyStrat(key,items,trailer=TR,mode="backToFront"){
-  const e=items.map(it=>({...it,vol:it.ancho*it.alto*it.fondo,load:0}));
-  let sorted;
-  if(key==="max_pieces")sorted=[...e].sort((a,b)=>a.vol-b.vol);
-  else if(key==="max_volume")sorted=[...e].sort((a,b)=>b.vol-a.vol);
-  else if(key==="big_first")sorted=[...e].sort((a,b)=>Math.max(b.ancho,b.alto,b.fondo)-Math.max(a.ancho,a.alto,a.fondo));
-  else if(key==="flat_first")sorted=[...e].sort((a,b)=>Math.min(a.ancho,a.alto,a.fondo)-Math.min(b.ancho,b.alto,b.fondo));
-  else sorted=[...e].sort((a,b)=>b.vol-a.vol);
-
-  const w=items.map(it=>({...it,load:0}));
-
-  if(key==="balanced"){
-    // Versión rápida: calcular capacidad individual de cada tipo primero
-    const capacities={};
-    for(const item of w){
-      const testItems=[{...item,load:item.inv}];
-      const{placed}=fullPack(testItems,trailer,mode);
-      capacities[item.id]=placed.length;
-    }
-    // Repartir proporcionalmente entre todos los tipos
-    let changed=true;
-    while(changed){
-      changed=false;
-      for(const x of w){
-        if(x.load>=x.inv)continue;
-        x.load++;
-        const{placed}=fullPack(w,trailer,mode);
-        const c=getCounts(placed);
-        if((c[x.id]||0)>=x.load)changed=true;
-        else x.load--;
-      }
-    }
-    return w;
-  }
-
-  // Para otras estrategias: búsqueda binaria por tipo (máximo que cabe)
-  for(const s of sorted){
-    const i=w.findIndex(x=>x.id===s.id);
-    if(i<0)continue;
-    let lo=0,hi=s.inv;
-    while(lo<hi){
-      const mid=Math.ceil((lo+hi)/2);
-      w[i].load=mid;
-      const{placed}=fullPack(w,trailer,mode);
-      const c=getCounts(placed);
-      if((c[s.id]||0)>=mid)lo=mid;
-      else hi=mid-1;
-    }
-    w[i].load=lo;
-  }
-  return w;
-}
-
 
 export default function App(){
   const [items,setItems]=useState(FURNITURE.map(it=>({...it,load:0})));
@@ -288,7 +234,7 @@ export default function App(){
 
   useEffect(()=>{if(!simMode&&simPlayRef.current){clearInterval(simPlayRef.current);simPlayRef.current=null;}},[simMode]);
 
-  const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=applyStrat(k,items,TR,packMode);doRepack(r);setSS(false);setComp(false);},50);};
+  const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setSS(false);setComp(false);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
 
   const sel=selId?items.find(a=>a.id===selId):null;
