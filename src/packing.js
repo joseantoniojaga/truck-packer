@@ -149,30 +149,116 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
   return best;
 }
 
-// sortFn opcional: controla el orden en que se procesan los tipos. Si no se
-// pasa, se ordena por volumen descendente (comportamiento por defecto).
+// Column packing: avanza por el tráiler de fondo a frente, llenando cada
+// sección con un bloque uniforme (nW × nH) del tipo cuya rotación maximiza
+// la densidad en esa sección transversal. Una segunda pasada con findBestPos
+// rellena los huecos con items individuales.
+//
+// sortFn opcional: orden de prioridad para elegir tipos. Por defecto, mayor
+// volumen primero.
 export function fullPack(items, trailer, mode = "backToFront", sortFn) {
   const placed = [];
-  const cols = Math.ceil(trailer.largo / HR);
-  const rows = Math.ceil(trailer.ancho / HR);
-  const hmap = new Float32Array(cols * rows);
-  const hctx = { hmap, cols, rows, HR };
   const types = [...items].filter(it => it.load > 0)
-    .map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo }));
+    .map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo, remaining: it.load }));
+
   if (sortFn) types.sort(sortFn);
   else types.sort((a, b) => b.vol - a.vol || a.id - b.id);
+
+  let curX = 0;
+
+  while (curX < trailer.largo) {
+    let bestType = null;
+    let bestRot = null;
+    let bestScore = 0;
+    let bestCount = 0;
+    let bestLayout = null;
+
+    // Para cada tipo y rotación, calcular cuántos caben en esta sección
+    // transversal (ancho × alto). Gana la combinación que coloca más
+    // VOLUMEN por unidad de avance en x = perSection × rot.w × rot.h
+    // (equivalente a la utilización de la sección transversal). Usar
+    // sólo el count favorece rotaciones planas con muchos items pero
+    // mala utilización; ponderar por área cross-section corrige eso.
+    for (const type of types) {
+      if (type.remaining <= 0) continue;
+      const rots = getRots(type.ancho, type.alto, type.fondo);
+      for (const rot of rots) {
+        if (curX + rot.l > trailer.largo + 0.1) continue;
+        if (rot.w > trailer.ancho + 0.1) continue;
+        if (rot.h > trailer.alto + 0.1) continue;
+
+        const nW = Math.floor(trailer.ancho / rot.w);
+        const nH = Math.floor(trailer.alto / rot.h);
+        const perSection = Math.min(nW * nH, type.remaining);
+        const score = perSection * rot.w * rot.h;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCount = perSection;
+          bestType = type;
+          bestRot = rot;
+          bestLayout = { nW, nH };
+        }
+      }
+    }
+
+    if (!bestType || bestCount === 0) {
+      // Nada forma bloque en esta sección: intentar UN item individual
+      // y avanzar si tampoco cabe.
+      let filled = false;
+      for (const type of types) {
+        if (type.remaining <= 0) continue;
+        const pos = findBestPos(
+          [type.ancho, type.alto, type.fondo],
+          placed, trailer, mode, type.id
+        );
+        if (pos && pos.x >= curX - 1) {
+          placed.push({ id: type.id, name: type.name, color: type.color,
+            x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h });
+          type.remaining--;
+          filled = true;
+          break;
+        }
+      }
+      if (!filled) curX += 10;
+      continue;
+    }
+
+    // Colocar el bloque (apilamiento por columnas, soporte por construcción)
+    let count = 0;
+    const { nW, nH } = bestLayout;
+    for (let wi = 0; wi < nW && count < bestType.remaining; wi++) {
+      for (let hi = 0; hi < nH && count < bestType.remaining; hi++) {
+        const y = wi * bestRot.w;
+        const z = hi * bestRot.h;
+        if (y + bestRot.w > trailer.ancho + 0.1) continue;
+        if (z + bestRot.h > trailer.alto + 0.1) continue;
+        placed.push({
+          id: bestType.id, name: bestType.name, color: bestType.color,
+          x: curX, y, z,
+          l: bestRot.l, w: bestRot.w, h: bestRot.h
+        });
+        count++;
+      }
+    }
+    bestType.remaining -= count;
+    curX += bestRot.l;
+  }
+
+  // Segunda pasada: rellenar huecos con items individuales (findBestPos)
   for (const type of types) {
-    let rem = type.load;
-    while (rem > 0) {
-      const pos = findBestPos([type.ancho, type.alto, type.fondo], placed, trailer, mode, type.id, hctx);
+    while (type.remaining > 0) {
+      const pos = findBestPos(
+        [type.ancho, type.alto, type.fondo],
+        placed, trailer, mode, type.id
+      );
       if (!pos) break;
-      const item = { id: type.id, name: type.name, color: type.color,
-        x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h };
-      placed.push(item);
-      hmapUpdate(hmap, item, cols, rows, HR);
-      rem--;
+      placed.push({ id: type.id, name: type.name, color: type.color,
+        x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h });
+      type.remaining--;
     }
   }
+
   return { placed };
 }
 

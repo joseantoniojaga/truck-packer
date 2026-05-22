@@ -381,6 +381,17 @@ console.log('\nTests: performance');
     assert(elapsed < 2000, 'quickStrat tardó ' + elapsed + 'ms');
     assert(totalLoaded > 0, 'debería colocar al menos algunos items');
   });
+
+  test('Column packing: max_volume llena más del 80%', () => {
+    const items = FURNITURE.map(f => ({
+      id:f.id, name:f.name, inv:f.inv, ancho:f.ancho, alto:f.alto, fondo:f.fondo, color:f.color, load:f.inv
+    }));
+    const {placed} = fullPack(items, {largo:1615.4, ancho:247, alto:280}, 'free');
+    const vol = placed.reduce((s,p) => s + p.l*p.w*p.h, 0);
+    const util = vol / (1615.4*247*280) * 100;
+    console.log('  Column packing: ' + placed.length + ' items, ' + util.toFixed(1) + '% utilización');
+    assert(util > 80, 'utilización debería ser > 80%, fue ' + util.toFixed(1) + '%');
+  });
 }
 
 // ─── Resumen ──────────────────────────────────────────────────────────────────
