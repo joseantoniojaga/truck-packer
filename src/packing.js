@@ -149,15 +149,18 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
   return best;
 }
 
-export function fullPack(items, trailer, mode = "backToFront") {
+// sortFn opcional: controla el orden en que se procesan los tipos. Si no se
+// pasa, se ordena por volumen descendente (comportamiento por defecto).
+export function fullPack(items, trailer, mode = "backToFront", sortFn) {
   const placed = [];
   const cols = Math.ceil(trailer.largo / HR);
   const rows = Math.ceil(trailer.ancho / HR);
   const hmap = new Float32Array(cols * rows);
   const hctx = { hmap, cols, rows, HR };
   const types = [...items].filter(it => it.load > 0)
-    .map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo }))
-    .sort((a, b) => b.vol - a.vol || a.id - b.id);
+    .map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo }));
+  if (sortFn) types.sort(sortFn);
+  else types.sort((a, b) => b.vol - a.vol || a.id - b.id);
   for (const type of types) {
     let rem = type.load;
     while (rem > 0) {
@@ -173,33 +176,37 @@ export function fullPack(items, trailer, mode = "backToFront") {
   return { placed };
 }
 
-// Calcula las cargas de una estrategia con UN solo fullPack: pone todos los
-// tipos al inventario máximo y deja que fullPack decida cuántos caben.
+// Calcula las cargas de cada estrategia. Para no-balanced: una sola llamada
+// a fullPack con todos los tipos al máximo, pasando un sortFn que respeta
+// la prioridad de la estrategia. Para balanced: distribución por rondas
+// (varias llamadas a fullPack, inevitablemente más lento).
 export function quickStrat(key, items, trailer, mode) {
-  const sorted = items.map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo, load: 0 }));
-
-  if (key === "max_pieces") sorted.sort((a, b) => a.vol - b.vol);
-  else if (key === "max_volume") sorted.sort((a, b) => b.vol - a.vol);
-  else if (key === "big_first") sorted.sort((a, b) => Math.max(b.ancho, b.alto, b.fondo) - Math.max(a.ancho, a.alto, a.fondo));
-  else if (key === "flat_first") sorted.sort((a, b) => Math.min(a.ancho, a.alto, a.fondo) - Math.min(b.ancho, b.alto, b.fondo));
-  else sorted.sort((a, b) => b.vol - a.vol);
-
   if (key === "balanced") {
-    const maxItems = items.map(it => ({ ...it, load: it.inv }));
-    const { placed } = fullPack(maxItems, trailer, mode);
-    const counts = getCounts(placed);
-    return items.map(it => ({ ...it, load: counts[it.id] || 0 }));
+    const result = items.map(it => ({ ...it, load: 0 }));
+    let added = true;
+    while (added) {
+      added = false;
+      for (const r of result) {
+        if (r.load >= r.inv) continue;
+        r.load++;
+        const { placed } = fullPack(result, trailer, mode);
+        const c = getCounts(placed);
+        if ((c[r.id] || 0) >= r.load) added = true;
+        else r.load--;
+      }
+    }
+    return result;
   }
 
-  // Otras estrategias: cargar cada tipo al inventario máximo en orden de
-  // prioridad; un único fullPack determina cuántos caben de cada uno.
-  const result = items.map(it => ({ ...it, load: 0 }));
-  for (const s of sorted) {
-    const idx = result.findIndex(r => r.id === s.id);
-    if (idx < 0) continue;
-    result[idx].load = s.inv;
-  }
-  const { placed } = fullPack(result, trailer, mode);
+  let sortFn;
+  if (key === "max_pieces") sortFn = (a, b) => a.vol - b.vol;
+  else if (key === "max_volume") sortFn = (a, b) => b.vol - a.vol;
+  else if (key === "big_first") sortFn = (a, b) => Math.max(b.ancho, b.alto, b.fondo) - Math.max(a.ancho, a.alto, a.fondo);
+  else if (key === "flat_first") sortFn = (a, b) => Math.min(a.ancho, a.alto, a.fondo) - Math.min(b.ancho, b.alto, b.fondo);
+  else sortFn = (a, b) => b.vol - a.vol;
+
+  const result = items.map(it => ({ ...it, load: it.inv }));
+  const { placed } = fullPack(result, trailer, mode, sortFn);
   const counts = getCounts(placed);
-  return result.map(it => ({ ...it, load: counts[it.id] || 0 }));
+  return items.map(it => ({ ...it, load: counts[it.id] || 0 }));
 }
