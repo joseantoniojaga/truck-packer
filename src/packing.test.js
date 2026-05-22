@@ -359,6 +359,19 @@ console.log('\nTests: intercambio inteligente');
   });
 }
 
+// ─── Test: performance ───────────────────────────────────────────────────────
+console.log('\nTests: performance');
+{
+  test('Performance: fullPack con 200 items tarda menos de 3 segundos', () => {
+    const items = [{id:4,name:"Buró",inv:200,ancho:65,alto:65,fondo:40,color:"#F2CC8F",load:200}];
+    const start = Date.now();
+    const {placed} = fullPack(items, {largo:1615.4,ancho:247,alto:280}, 'free');
+    const elapsed = Date.now() - start;
+    console.log('  fullPack 200 burós: ' + elapsed + 'ms, colocó ' + placed.length);
+    assert(elapsed < 3000, 'fullPack tardó ' + elapsed + 'ms, debería ser < 3000ms');
+  });
+}
+
 // ─── Resumen ──────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(50)}`);
 console.log(`${pass + fail} checks: ${pass} ✓  ${fail} ✗`);

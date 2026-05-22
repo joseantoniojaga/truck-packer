@@ -18,6 +18,8 @@ export function getRots(a, b, c) {
   return r;
 }
 
+// Recorre todos los items colocados. Se usa para addOne (colocación incremental)
+// donde no existe un grid de alturas precalculado.
 export function hmapGetZ(x, y, l, w, placed) {
   let maxZ = 0;
   for (const p of placed) {
@@ -26,6 +28,34 @@ export function hmapGetZ(x, y, l, w, placed) {
       if (p.z + p.h > maxZ) maxZ = p.z + p.h;
     }
   }
+  return maxZ;
+}
+
+// ─── Height map incremental (grid de alturas) ────────────────────────────────
+// fullPack mantiene un grid de alturas que se actualiza al colocar cada item,
+// evitando recorrer todos los items colocados en cada consulta.
+export const HR = 5; // resolución del grid en cm
+
+export function hmapUpdate(hmap, item, cols, rows, HR) {
+  const x0 = Math.floor(item.x / HR);
+  const x1 = Math.min(Math.ceil((item.x + item.l) / HR), cols);
+  const y0 = Math.floor(item.y / HR);
+  const y1 = Math.min(Math.ceil((item.y + item.w) / HR), rows);
+  const top = item.z + item.h;
+  for (let xi = x0; xi < x1; xi++)
+    for (let yi = y0; yi < y1; yi++)
+      if (top > hmap[xi * rows + yi]) hmap[xi * rows + yi] = top;
+}
+
+export function hmapQueryMax(hmap, x, y, l, w, cols, rows, HR) {
+  const x0 = Math.floor(x / HR);
+  const x1 = Math.min(Math.ceil((x + l) / HR), cols);
+  const y0 = Math.floor(y / HR);
+  const y1 = Math.min(Math.ceil((y + w) / HR), rows);
+  let maxZ = 0;
+  for (let xi = x0; xi < x1; xi++)
+    for (let yi = y0; yi < y1; yi++)
+      if (hmap[xi * rows + yi] > maxZ) maxZ = hmap[xi * rows + yi];
   return maxZ;
 }
 
@@ -43,7 +73,9 @@ export function supportRatio(x, y, l, w, z, placed) {
 }
 
 // itemId: when set, items of the same type at the same (x,y) get a -5e7 stacking bonus
-export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null) {
+// hctx: cuando se pasa {hmap, cols, rows, HR}, usa el grid de alturas precalculado
+//       y limita el número de posiciones candidatas (usado por fullPack).
+export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null, hctx = null) {
   const rs = getRots(...dims);
 
   // Priorizar la rotación que ya usan items del mismo tipo
@@ -80,15 +112,22 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
     xs.add(trailer.largo - rot.l);
     ys.add(trailer.ancho - rot.w);
   }
-  const xArr = [...xs].filter(x => x >= -0.1 && x <= trailer.largo + 0.1);
-  const yArr = [...ys].filter(y => y >= -0.1 && y <= trailer.ancho + 0.1);
+  let xArr = [...xs].filter(x => x >= -0.1 && x <= trailer.largo + 0.1);
+  let yArr = [...ys].filter(y => y >= -0.1 && y <= trailer.ancho + 0.1);
+  // Con grid: limitar candidatos para evitar explosión cuadrática
+  if (hctx) {
+    xArr = [...xs].filter(x => x >= 0 && x <= trailer.largo).sort((a,b) => a-b).slice(0, 50);
+    yArr = [...ys].filter(y => y >= 0 && y <= trailer.ancho).sort((a,b) => a-b).slice(0, 20);
+  }
   let best = null;
   for (const rot of rs) {
     for (const x of xArr) {
       if (x + rot.l > trailer.largo + 0.1) continue;
       for (const y of yArr) {
         if (y + rot.w > trailer.ancho + 0.1) continue;
-        const z = hmapGetZ(x, y, rot.l, rot.w, placed);
+        const z = hctx
+          ? hmapQueryMax(hctx.hmap, x, y, rot.l, rot.w, hctx.cols, hctx.rows, hctx.HR)
+          : hmapGetZ(x, y, rot.l, rot.w, placed);
         if (z + rot.h > trailer.alto + 0.1) continue;
         if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < 0.8) continue;
         const sameTypeAtXY = itemId !== null &&
@@ -112,16 +151,22 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
 
 export function fullPack(items, trailer, mode = "backToFront") {
   const placed = [];
+  const cols = Math.ceil(trailer.largo / HR);
+  const rows = Math.ceil(trailer.ancho / HR);
+  const hmap = new Float32Array(cols * rows);
+  const hctx = { hmap, cols, rows, HR };
   const types = [...items].filter(it => it.load > 0)
     .map(it => ({ ...it, vol: it.ancho * it.alto * it.fondo }))
     .sort((a, b) => b.vol - a.vol || a.id - b.id);
   for (const type of types) {
     let rem = type.load;
     while (rem > 0) {
-      const pos = findBestPos([type.ancho, type.alto, type.fondo], placed, trailer, mode, type.id);
+      const pos = findBestPos([type.ancho, type.alto, type.fondo], placed, trailer, mode, type.id, hctx);
       if (!pos) break;
-      placed.push({ id: type.id, name: type.name, color: type.color,
-        x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h });
+      const item = { id: type.id, name: type.name, color: type.color,
+        x: pos.x, y: pos.y, z: pos.z, l: pos.l, w: pos.w, h: pos.h };
+      placed.push(item);
+      hmapUpdate(hmap, item, cols, rows, HR);
       rem--;
     }
   }
