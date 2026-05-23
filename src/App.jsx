@@ -6,12 +6,14 @@ import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
 import Modal from './components/Modal.jsx';
 import InventoryManagerModal from './components/InventoryManagerModal.jsx';
+import FurnitureEditorModal from './components/FurnitureEditorModal.jsx';
 import { COLORS } from './constants.js';
 import {
   loadInventories,
   getActiveInventoryId,
   setActiveInventoryId as persistActiveInventoryId,
   createInventory,
+  updateInventory,
   DEFAULT_INVENTORY_NAME,
 } from './inventoryStorage.js';
 
@@ -130,6 +132,8 @@ export default function App(){
   const [inventories,setInventories]=useState(()=>loadInventories());
   const [activeInventoryId,setActiveInventoryIdState]=useState(()=>getActiveInventoryId());
   const [showInventoryManager,setShowInventoryManager]=useState(false);
+  const [showFurnitureEditor,setShowFurnitureEditor]=useState(false);
+  const [editingFurniture,setEditingFurniture]=useState(null);
   const [placed,setPlaced]=useState([]);
   const [selId,setSelId]=useState(null);
   const [viewMode,setVM]=useState("3d");
@@ -237,6 +241,46 @@ export default function App(){
     if(newLoad===it.load)return;
     doRepack(items.map(x=>x.id===id?{...x,load:newLoad}:x));
   },[items,doRepack]);
+
+  // Persiste los items del inventario activo en localStorage (sin el campo load).
+  const persistActiveItems=useCallback((newItems)=>{
+    if(!activeInventoryId)return;
+    updateInventory(activeInventoryId,{items:newItems.map(({load,...rest})=>rest)});
+    setInventories(loadInventories());
+  },[activeInventoryId]);
+
+  // Guardar (nuevo o editado) un mueble custom.
+  const handleFurnitureSave=useCallback((furniture)=>{
+    const existing=items.find(x=>x.id===furniture.id);
+    let newItems;
+    if(existing){
+      // Edición: preservar load, pero clamp si bajó el inv
+      newItems=items.map(it=>it.id===furniture.id
+        ?{...furniture,load:Math.min(it.load||0,furniture.inv)}
+        :it);
+    }else{
+      // Nuevo: load = 0
+      newItems=[...items,{...furniture,load:0}];
+    }
+    setItems(newItems);
+    persistActiveItems(newItems);
+  },[items,persistActiveItems]);
+
+  // Borrar un mueble custom (con confirm). También quita lo ya colocado y persiste.
+  const handleFurnitureDelete=useCallback((furniture)=>{
+    const placedCount=placed.filter(p=>p.id===furniture.id).length;
+    const msg=placedCount>0
+      ? `¿Borrar el mueble "${furniture.name}"? También se quitarán los ${placedCount} ya colocados.`
+      : `¿Borrar el mueble "${furniture.name}"?`;
+    if(!window.confirm(msg))return;
+    const newItems=items.filter(it=>it.id!==furniture.id);
+    const newPlaced=placed.filter(p=>p.id!==furniture.id);
+    setItems(newItems);
+    setPlaced(newPlaced);
+    persistActiveItems(newItems);
+    setShowFurnitureEditor(false);
+    setEditingFurniture(null);
+  },[items,placed,persistActiveItems]);
 
   const setInv=useCallback((id,v)=>{
     const newInv=Math.max(0,v);
@@ -412,6 +456,17 @@ export default function App(){
         setPlaced={setPlaced}
       />
 
+      {/* FURNITURE EDITOR */}
+      <FurnitureEditorModal
+        open={showFurnitureEditor}
+        onClose={()=>{setShowFurnitureEditor(false);setEditingFurniture(null);}}
+        onSave={handleFurnitureSave}
+        onDelete={handleFurnitureDelete}
+        initialFurniture={editingFurniture}
+        existingFurniture={items}
+        trailerVolume={TV}
+      />
+
       {/* ── HEADER (ancho completo) ── */}
       <div className="tp-header">
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
@@ -492,6 +547,15 @@ export default function App(){
               {editMode?<span>Editando <b style={{color:COLORS.amber}}>inventario</b></span>
               :<><span style={{fontFamily:"JetBrains Mono",color:COLORS.green}}>colocadas</span><span>/</span><span style={{fontFamily:"JetBrains Mono",color:"#E8E6DF"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
             </div>
+            {items.length===0&&(
+              <div style={{textAlign:"center",padding:"30px 10px",color:COLORS.muted,fontSize:12,lineHeight:1.5}}>
+                <p style={{margin:"0 0 12px"}}>Este inventario está vacío.<br/>Agrega tu primer mueble.</p>
+                <button onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
+                        style={{...B,padding:"10px 18px",fontSize:12,color:COLORS.cyan,borderColor:COLORS.cyan+"44"}}>
+                  ➕ Agregar mueble
+                </button>
+              </div>
+            )}
             {items.map(a=>{const pk=pkC[a.id]||0;
               return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",marginBottom:3,background:selId===a.id?"#0F172A":"#13192A",borderRadius:6,cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
                 <div style={{width:4,height:24,borderRadius:3,background:a.color,flexShrink:0}}/>
@@ -519,8 +583,21 @@ export default function App(){
                   />
                   <button onMouseDown={e=>{e.stopPropagation();startHold('add',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('add',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>)}
+                <button
+                  onClick={e=>{e.stopPropagation();setEditingFurniture(a);setShowFurnitureEditor(true);}}
+                  onMouseEnter={e=>{e.currentTarget.style.opacity=1;}}
+                  onMouseLeave={e=>{e.currentTarget.style.opacity=0.5;}}
+                  title="Editar mueble"
+                  style={{background:"transparent",border:"none",cursor:"pointer",fontSize:11,padding:0,opacity:0.5,width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
+                >✏️</button>
               </div>);
             })}
+            {items.length>0&&(
+              <button onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
+                      style={{marginTop:6,width:"100%",padding:"6px",fontSize:11,color:COLORS.cyan,background:"transparent",border:`1px dashed ${COLORS.cyan}44`,borderRadius:6,cursor:"pointer",fontFamily:"DM Sans",fontWeight:600}}>
+                ➕ Agregar mueble
+              </button>
+            )}
           </div>
 
           <div style={{marginTop:10,background:"#162032",borderRadius:8,padding:10,fontSize:10,color:COLORS.muted,lineHeight:1.5}}>
