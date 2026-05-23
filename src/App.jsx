@@ -93,9 +93,9 @@ export default function App(){
     document.documentElement.style.background=COLORS.bg;
   },[]);
 
-  const stRef=useRef({th:Math.PI/4,ph:Math.PI/3,r:1400,dr:false,lx:0,ly:0});
-  const onZoomIn=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r-200));};
-  const onZoomOut=()=>{stRef.current.r=Math.max(400,Math.min(3500,stRef.current.r+200));};
+  const stRef=useRef({theta:Math.PI/4,phi:Math.PI/3,radius:1400,dragging:false,lastX:0,lastY:0});
+  const onZoomIn=()=>{stRef.current.radius=Math.max(400,Math.min(3500,stRef.current.radius-200));};
+  const onZoomOut=()=>{stRef.current.radius=Math.max(400,Math.min(3500,stRef.current.radius+200));};
 
   const holdRef=useRef(null);
   const startHold=(type,id)=>{
