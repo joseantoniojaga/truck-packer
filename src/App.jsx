@@ -190,6 +190,16 @@ export default function App(){
     setItems(newItems);setPlaced(p);
   },[packMode]);
 
+  // SET LOAD directly (input editing): clamp a [0, inv] y repack completo
+  // porque cambiar load no es incremental.
+  const setLoad=useCallback((id,v)=>{
+    const it=items.find(x=>x.id===id);
+    if(!it)return;
+    const newLoad=Math.max(0,Math.min(it.inv,v|0));
+    if(newLoad===it.load)return;
+    doRepack(items.map(x=>x.id===id?{...x,load:newLoad}:x));
+  },[items,doRepack]);
+
   const setInv=useCallback((id,v)=>{
     const newInv=Math.max(0,v);
     setItems(items.map(it=>{
@@ -257,6 +267,9 @@ export default function App(){
           .tp-cols{flex-direction:column;flex:none;overflow:visible;}
           .tp-left,.tp-right{width:100%;overflow:visible;}
         }
+        .tp-qty::-webkit-outer-spin-button,
+        .tp-qty::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+        .tp-qty{-moz-appearance:textfield;}
       `}</style>
 
       {/* CONFLICT */}
@@ -435,11 +448,23 @@ export default function App(){
                 {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?COLORS.green:COLORS.amber,minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
                   <button onMouseDown={e=>{e.stopPropagation();startHold('invDown',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invDown',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
-                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.amber,minWidth:24,textAlign:"center"}}>{a.inv}</span>
+                  <input
+                    type="number" className="tp-qty" value={a.inv} min={0} max={999}
+                    onChange={e=>{const v=e.target.value;setInv(a.id, v===""?0:Math.max(0,Math.min(999,parseInt(v,10)||0)));}}
+                    onClick={e=>e.stopPropagation()}
+                    onFocus={e=>e.target.select()}
+                    style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.amber,minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
+                  />
                   <button onMouseDown={e=>{e.stopPropagation();startHold('invUp',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invUp',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
                   <button onMouseDown={e=>{e.stopPropagation();startHold('remove',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('remove',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
-                  <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.cyan,minWidth:24,textAlign:"center"}}>{a.load}</span>
+                  <input
+                    type="number" className="tp-qty" value={a.load} min={0} max={a.inv}
+                    onChange={e=>{const v=e.target.value;setLoad(a.id, v===""?0:(parseInt(v,10)||0));}}
+                    onClick={e=>e.stopPropagation()}
+                    onFocus={e=>e.target.select()}
+                    style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.cyan,minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
+                  />
                   <button onMouseDown={e=>{e.stopPropagation();startHold('add',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('add',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>)}
               </div>);
