@@ -33,34 +33,6 @@ export function hmapGetZ(x, y, l, w, placed) {
   return maxZ;
 }
 
-// ─── Height map incremental (grid de alturas) ────────────────────────────────
-// fullPack mantiene un grid de alturas que se actualiza al colocar cada item,
-// evitando recorrer todos los items colocados en cada consulta.
-const HR = 5; // resolución del grid en cm
-
-function hmapUpdate(hmap, item, cols, rows, HR) {
-  const x0 = Math.floor(item.x / HR);
-  const x1 = Math.min(Math.ceil((item.x + item.l) / HR), cols);
-  const y0 = Math.floor(item.y / HR);
-  const y1 = Math.min(Math.ceil((item.y + item.w) / HR), rows);
-  const top = item.z + item.h;
-  for (let xi = x0; xi < x1; xi++)
-    for (let yi = y0; yi < y1; yi++)
-      if (top > hmap[xi * rows + yi]) hmap[xi * rows + yi] = top;
-}
-
-function hmapQueryMax(hmap, x, y, l, w, cols, rows, HR) {
-  const x0 = Math.floor(x / HR);
-  const x1 = Math.min(Math.ceil((x + l) / HR), cols);
-  const y0 = Math.floor(y / HR);
-  const y1 = Math.min(Math.ceil((y + w) / HR), rows);
-  let maxZ = 0;
-  for (let xi = x0; xi < x1; xi++)
-    for (let yi = y0; yi < y1; yi++)
-      if (hmap[xi * rows + yi] > maxZ) maxZ = hmap[xi * rows + yi];
-  return maxZ;
-}
-
 export function supportRatio(x, y, l, w, z, placed) {
   if (z < 1) return 1;
   let supported = 0;
@@ -76,9 +48,7 @@ export function supportRatio(x, y, l, w, z, placed) {
 
 // itemId: when set, items of the same type at the same (x,y) get a stacking bonus
 //         (SCORE_WEIGHTS.SAME_TYPE_BONUS).
-// hctx: cuando se pasa {hmap, cols, rows, HR}, usa el grid de alturas precalculado
-//       y limita el número de posiciones candidatas (usado por fullPack).
-export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null, hctx = null) {
+export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId = null) {
   const rs = getRots(...dims);
 
   // Priorizar la rotación que ya usan items del mismo tipo
@@ -115,22 +85,15 @@ export function findBestPos(dims, placed, trailer, mode = "backToFront", itemId 
     xs.add(trailer.largo - rot.l);
     ys.add(trailer.ancho - rot.w);
   }
-  let xArr = [...xs].filter(x => x >= -GEOMETRIC_TOLERANCE && x <= trailer.largo + GEOMETRIC_TOLERANCE);
-  let yArr = [...ys].filter(y => y >= -GEOMETRIC_TOLERANCE && y <= trailer.ancho + GEOMETRIC_TOLERANCE);
-  // Con grid: limitar candidatos para evitar explosión cuadrática
-  if (hctx) {
-    xArr = [...xs].filter(x => x >= 0 && x <= trailer.largo).sort((a,b) => a-b).slice(0, 50);
-    yArr = [...ys].filter(y => y >= 0 && y <= trailer.ancho).sort((a,b) => a-b).slice(0, 20);
-  }
+  const xArr = [...xs].filter(x => x >= -GEOMETRIC_TOLERANCE && x <= trailer.largo + GEOMETRIC_TOLERANCE);
+  const yArr = [...ys].filter(y => y >= -GEOMETRIC_TOLERANCE && y <= trailer.ancho + GEOMETRIC_TOLERANCE);
   let best = null;
   for (const rot of rs) {
     for (const x of xArr) {
       if (x + rot.l > trailer.largo + GEOMETRIC_TOLERANCE) continue;
       for (const y of yArr) {
         if (y + rot.w > trailer.ancho + GEOMETRIC_TOLERANCE) continue;
-        const z = hctx
-          ? hmapQueryMax(hctx.hmap, x, y, rot.l, rot.w, hctx.cols, hctx.rows, hctx.HR)
-          : hmapGetZ(x, y, rot.l, rot.w, placed);
+        const z = hmapGetZ(x, y, rot.l, rot.w, placed);
         if (z + rot.h > trailer.alto + GEOMETRIC_TOLERANCE) continue;
         if (z > 1 && supportRatio(x, y, rot.l, rot.w, z, placed) < SUPPORT_RATIO_THRESHOLD) continue;
         const sameTypeAtXY = itemId !== null &&
