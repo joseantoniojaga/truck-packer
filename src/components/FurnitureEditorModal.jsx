@@ -195,7 +195,7 @@ export default function FurnitureEditorModal({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
-        {isEdit && (
+        {isEdit && onDelete && (
           <button onClick={handleDelete}
                   style={{ ...baseBtn, color: COLORS.red, borderColor: COLORS.red + "44", fontSize: 10, padding: "6px 10px" }}>
             🗑️ Borrar mueble

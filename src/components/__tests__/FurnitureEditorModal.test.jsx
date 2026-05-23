@@ -196,6 +196,24 @@ describe('FurnitureEditorModal — acciones', () => {
   });
 });
 
+describe('FurnitureEditorModal — defensive', () => {
+  it('modo edición sin onDelete prop: el botón Borrar no aparece (defensive)', () => {
+    // Renderizamos directamente sin pasar onDelete (no usamos renderModal()
+    // porque inyecta vi.fn() por default).
+    render(
+      <FurnitureEditorModal
+        open
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        initialFurniture={sampleFurn({ id: 'self', name: 'Editable' })}
+        existingFurniture={[]}
+        trailerVolume={TRAILER_VOLUME}
+      />
+    );
+    expect(screen.queryByText(/Borrar mueble/)).toBeNull();
+  });
+});
+
 describe('FurnitureEditorModal — borrado (modo edición)', () => {
   beforeEach(() => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
