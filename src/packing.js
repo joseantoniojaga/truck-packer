@@ -36,9 +36,9 @@ export function hmapGetZ(x, y, l, w, placed) {
 // ─── Height map incremental (grid de alturas) ────────────────────────────────
 // fullPack mantiene un grid de alturas que se actualiza al colocar cada item,
 // evitando recorrer todos los items colocados en cada consulta.
-export const HR = 5; // resolución del grid en cm
+const HR = 5; // resolución del grid en cm
 
-export function hmapUpdate(hmap, item, cols, rows, HR) {
+function hmapUpdate(hmap, item, cols, rows, HR) {
   const x0 = Math.floor(item.x / HR);
   const x1 = Math.min(Math.ceil((item.x + item.l) / HR), cols);
   const y0 = Math.floor(item.y / HR);
@@ -49,7 +49,7 @@ export function hmapUpdate(hmap, item, cols, rows, HR) {
       if (top > hmap[xi * rows + yi]) hmap[xi * rows + yi] = top;
 }
 
-export function hmapQueryMax(hmap, x, y, l, w, cols, rows, HR) {
+function hmapQueryMax(hmap, x, y, l, w, cols, rows, HR) {
   const x0 = Math.floor(x / HR);
   const x1 = Math.min(Math.ceil((x + l) / HR), cols);
   const y0 = Math.floor(y / HR);

@@ -17,7 +17,7 @@ export class Furniture {
   get dimensions() { return [this.width, this.height, this.depth]; }
 }
 
-export function createFurniture(props) {
+function createFurniture(props) {
   return new Furniture(props);
 }
 
