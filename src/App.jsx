@@ -5,7 +5,40 @@ import { calculateSwapOptions } from './swapCalculator';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
 import Modal from './components/Modal.jsx';
+import InventoryManagerModal from './components/InventoryManagerModal.jsx';
 import { COLORS } from './constants.js';
+import {
+  loadInventories,
+  getActiveInventoryId,
+  setActiveInventoryId as persistActiveInventoryId,
+  createInventory,
+  DEFAULT_INVENTORY_NAME,
+} from './inventoryStorage.js';
+
+// Bootstrap de inventarios: corre una sola vez en el primer render (se llama
+// desde los useState lazy initializers). Si no hay inventarios guardados,
+// crea el "Inventario base" con FURNITURE. Si hay pero no activo, marca el
+// primero como activo. Devuelve { inventories, activeId, items }.
+function bootstrapInventories() {
+  let invs = loadInventories();
+  let activeId = getActiveInventoryId();
+  if (invs.length === 0) {
+    const baseItems = FURNITURE.map(f => ({
+      id: f.id, name: f.name, color: f.color,
+      ancho: f.ancho, alto: f.alto, fondo: f.fondo, inv: f.inv,
+    }));
+    const base = createInventory(DEFAULT_INVENTORY_NAME, baseItems);
+    invs = [base];
+    persistActiveInventoryId(base.id);
+    activeId = base.id;
+  } else if (!activeId || !invs.find(i => i.id === activeId)) {
+    activeId = invs[0].id;
+    persistActiveInventoryId(activeId);
+  }
+  const active = invs.find(i => i.id === activeId);
+  const items = active ? active.items.map(it => ({ ...it, load: 0 })) : [];
+  return { inventories: invs, activeId, items };
+}
 
 const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
 const TV = TR.largo*TR.ancho*TR.alto;
@@ -91,7 +124,12 @@ const STRATS=[
 ];
 
 export default function App(){
-  const [items,setItems]=useState(FURNITURE.map(it=>({...it,load:0})));
+  // El primer useState corre el bootstrap (crea "Inventario base" si no había
+  // nada en localStorage). Los siguientes solo leen el localStorage ya seedado.
+  const [items,setItems]=useState(()=>bootstrapInventories().items);
+  const [inventories,setInventories]=useState(()=>loadInventories());
+  const [activeInventoryId,setActiveInventoryIdState]=useState(()=>getActiveInventoryId());
+  const [showInventoryManager,setShowInventoryManager]=useState(false);
   const [placed,setPlaced]=useState([]);
   const [selId,setSelId]=useState(null);
   const [viewMode,setVM]=useState("3d");
@@ -361,6 +399,19 @@ export default function App(){
         </div>
       </Modal>
 
+      {/* INVENTORY MANAGER */}
+      <InventoryManagerModal
+        open={showInventoryManager}
+        onClose={()=>setShowInventoryManager(false)}
+        inventories={inventories}
+        setInventories={setInventories}
+        activeInventoryId={activeInventoryId}
+        setActiveInventoryIdState={setActiveInventoryIdState}
+        items={items}
+        setItems={setItems}
+        setPlaced={setPlaced}
+      />
+
       {/* ── HEADER (ancho completo) ── */}
       <div className="tp-header">
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
@@ -432,6 +483,7 @@ export default function App(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:12,fontWeight:600,color:COLORS.text}}>Muebles</span>
               <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>setShowInventoryManager(true)} style={{...B,padding:"3px 7px",fontSize:10,color:COLORS.cyan}}>🗂️ Inventarios</button>
                 <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?COLORS.amber:COLORS.muted}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
                 <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:COLORS.red}}>Todos a 0</button>
               </div>
