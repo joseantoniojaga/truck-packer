@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { findBestPos, fullPack, fmtV, getCounts, quickStrat } from './packing.js';
+import { PACKING_STRATEGIES } from './packingStrategies.js';
 import { calculateSwapOptions } from './swapCalculator';
 import { FURNITURE } from './furniture.js';
 import { computeLoadingOrder } from './loadingSequence.js';
@@ -49,14 +50,6 @@ const MIN = 5;
 
 
 // --- Three.js 3D Viewer ---
-const STRATS=[
-  {key:"max_pieces",icon:"🔢",label:"Máx piezas",desc:"Mayor número de muebles"},
-  {key:"max_volume",icon:"📦",label:"Máx volumen",desc:"Llena al máximo"},
-  {key:"big_first",icon:"🛋️",label:"Grandes primero",desc:"Prioriza grandes"},
-  {key:"flat_first",icon:"📐",label:"Planos primero",desc:"Apila lo plano"},
-  {key:"balanced",icon:"⚖️",label:"Balanceado",desc:"Reparte entre todos"},
-];
-
 export default function App(){
   // El primer useState corre el bootstrap (crea "Inventario base" si no había
   // nada en localStorage). Los siguientes solo leen el localStorage ya seedado.
@@ -445,7 +438,7 @@ export default function App(){
           {showStrats&&(
             <div style={{background:COLORS.card,borderRadius:8,padding:10,marginBottom:10,border:`1px solid ${COLORS.amber}22`}}>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {STRATS.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"8px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
+                {PACKING_STRATEGIES.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"8px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
                   <span style={{fontSize:16,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:11,color:COLORS.text,fontWeight:600}}>{s.label}</div><div style={{fontSize:9,color:"#64748B",fontWeight:400,marginTop:1}}>{s.desc}</div></div>
                 </button>))}
               </div>

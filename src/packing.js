@@ -1,4 +1,5 @@
 import { SUPPORT_RATIO_THRESHOLD, GEOMETRIC_TOLERANCE, HEIGHT_TOLERANCE, SCORE_WEIGHTS } from './constants.js';
+import { getStrategy } from './packingStrategies.js';
 
 export function fmtV(c) {
   return c >= 1e6 ? (c/1e6).toFixed(2) + " m³" : Math.round(c).toLocaleString("es-MX") + " cm³";
@@ -228,59 +229,13 @@ export function fullPack(items, trailer, mode = "backToFront", sortFn) {
   return { placed };
 }
 
-// Calcula las cargas de cada estrategia. Para no-balanced: una sola llamada
-// a fullPack con todos los tipos al máximo, pasando un sortFn que respeta
-// la prioridad de la estrategia. Para balanced: distribución por rondas
-// (varias llamadas a fullPack, inevitablemente más lento).
+// Wrapper que delega en el Strategy Pattern (ver src/packingStrategies.js).
+// Mantiene la firma histórica `quickStrat(key, items, trailer, mode)` para no
+// romper a los importadores (App.jsx y tests). Toda la lógica específica de
+// cada estrategia vive en su objeto correspondiente; agregar una nueva no
+// requiere modificar este archivo (Open/Closed Principle).
 export function quickStrat(key, items, trailer, mode) {
-  if (key === "balanced") {
-    // Paso 1: cuota equitativa. Búsqueda binaria del k máximo tal que TODOS
-    // los tipos quepan simultáneamente con load = min(k, inv). Forzar la
-    // misma cuota a todos es lo que da el carácter "balanceado": ningún
-    // tipo monopoliza el camión.
-    const result = items.map(it => ({ ...it, load: 0 }));
-    const maxInv = Math.max(...items.map(it => it.inv));
-    let lo = 0, hi = maxInv;
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      for (const r of result) r.load = Math.min(mid, r.inv);
-      const { placed } = fullPack(result, trailer, mode);
-      const c = getCounts(placed);
-      const allFit = result.every(r => (c[r.id] || 0) >= r.load);
-      if (allFit) lo = mid;
-      else hi = mid - 1;
-    }
-    for (const r of result) r.load = Math.min(lo, r.inv);
-
-    // Paso 2: ajuste fino. Para tipos con holgura (inv > load), búsqueda
-    // binaria de cuántos más caben sin sacar a los demás. La cuota
-    // equitativa ya dejó al sistema cerca del óptimo.
-    for (const r of result) {
-      if (r.load >= r.inv) continue;
-      let plo = r.load, phi = r.inv;
-      while (plo < phi) {
-        const mid = Math.ceil((plo + phi) / 2);
-        r.load = mid;
-        const { placed } = fullPack(result, trailer, mode);
-        const c = getCounts(placed);
-        const ok = result.every(x => (c[x.id] || 0) >= x.load);
-        if (ok) plo = mid;
-        else phi = mid - 1;
-      }
-      r.load = plo;
-    }
-    return result;
-  }
-
-  let sortFn;
-  if (key === "max_pieces") sortFn = (a, b) => a.vol - b.vol;
-  else if (key === "max_volume") sortFn = (a, b) => b.vol - a.vol;
-  else if (key === "big_first") sortFn = (a, b) => Math.max(b.ancho, b.alto, b.fondo) - Math.max(a.ancho, a.alto, a.fondo);
-  else if (key === "flat_first") sortFn = (a, b) => Math.min(a.ancho, a.alto, a.fondo) - Math.min(b.ancho, b.alto, b.fondo);
-  else sortFn = (a, b) => b.vol - a.vol;
-
-  const result = items.map(it => ({ ...it, load: it.inv }));
-  const { placed } = fullPack(result, trailer, mode, sortFn);
-  const counts = getCounts(placed);
-  return items.map(it => ({ ...it, load: counts[it.id] || 0 }));
+  const strategy = getStrategy(key);
+  if (!strategy) throw new Error("Unknown strategy: " + key);
+  return strategy.execute(items, trailer, mode);
 }
