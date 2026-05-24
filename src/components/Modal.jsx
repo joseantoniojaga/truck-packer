@@ -11,12 +11,13 @@ export default function Modal({ open, onClose, title, titleColor, accentColor, m
   if (!open) return null;
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "#000000CC", zIndex: 1000,
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1000,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 20
     }}>
       <div style={{
-        background: "#1E293B", borderRadius: 12, padding: 16,
-        maxWidth, width: "100%", border: `1px solid ${accentColor}`
+        background: "var(--surface)", borderRadius: "var(--radius-md)", padding: 16,
+        maxWidth, width: "100%", border: `1px solid ${accentColor}`,
+        boxShadow: "var(--shadow-md)"
       }}>
         {title && (
           <div style={{ fontSize: 14, fontWeight: 700, color: titleColor, marginBottom: 10 }}>

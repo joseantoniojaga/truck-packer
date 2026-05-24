@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
-import { COLORS } from '../constants.js';
+import { alpha } from '../styles/util.js';
 import {
   loadInventories,
   setActiveInventoryId as persistActiveId,
@@ -13,11 +13,10 @@ import {
 const stripLoad = (arr) => arr.map(({ load, ...rest }) => rest);
 
 const btn = {
-  borderRadius: 5,
-  border: `1px solid ${COLORS.border}`,
-  background: "#0F172A",
+  borderRadius: "var(--radius-sm)",
+  border: `1px solid var(--border)`,
+  background: "var(--bg-subtle)",
   cursor: "pointer",
-  fontFamily: "DM Sans",
   fontWeight: 600,
   padding: "4px 8px",
   fontSize: 10,
@@ -108,8 +107,8 @@ export default function InventoryManagerModal({
       open={open}
       onClose={onClose}
       title="🗂️ Mis inventarios"
-      titleColor={COLORS.cyan}
-      accentColor={COLORS.cyan + "44"}
+      titleColor={"var(--primary)"}
+      accentColor={alpha('--primary', 27)}
       maxWidth={420}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, maxHeight: 280, overflowY: "auto" }}>
@@ -120,16 +119,16 @@ export default function InventoryManagerModal({
               key={inv.id}
               style={{
                 display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 10px", background: "#0F172A", borderRadius: 6,
-                border: `1px solid ${isActive ? COLORS.green + "44" : COLORS.border}`,
+                padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: "var(--radius-sm)",
+                border: `1px solid ${isActive ? alpha('--success', 27) : 'var(--border)'}`,
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.text, display: "flex", alignItems: "center", gap: 6 }}>
-                  {isActive && <span style={{ color: COLORS.green }}>✓</span>}
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                  {isActive && <span style={{ color: "var(--success)" }}>✓</span>}
                   <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inv.name}</span>
                 </div>
-                <div style={{ fontSize: 10, color: COLORS.muted, marginTop: 2 }}>
+                <div style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 2 }}>
                   {inv.items.length} {inv.items.length === 1 ? "tipo de mueble" : "tipos de muebles"}
                 </div>
               </div>
@@ -137,16 +136,16 @@ export default function InventoryManagerModal({
                 <button
                   onClick={() => handleLoad(inv.id)}
                   disabled={isActive}
-                  style={{ ...btn, color: isActive ? COLORS.muted : COLORS.cyan, opacity: isActive ? 0.4 : 1, cursor: isActive ? "default" : "pointer" }}
+                  style={{ ...btn, color: isActive ? "var(--text-secondary)" : "var(--primary)", opacity: isActive ? 0.4 : 1, cursor: isActive ? "default" : "pointer" }}
                 >
                   Cargar
                 </button>
-                <button onClick={() => handleRename(inv.id)} title="Renombrar" style={{ ...btn, color: COLORS.muted }}>✏️</button>
+                <button onClick={() => handleRename(inv.id)} title="Renombrar" style={{ ...btn, color: "var(--text-secondary)" }}>✏️</button>
                 <button
                   onClick={() => handleDelete(inv.id)}
                   disabled={inventories.length <= 1}
                   title={inventories.length <= 1 ? "No puedes borrar el único" : "Borrar"}
-                  style={{ ...btn, color: COLORS.red, opacity: inventories.length <= 1 ? 0.3 : 1, cursor: inventories.length <= 1 ? "default" : "pointer" }}
+                  style={{ ...btn, color: "var(--error)", opacity: inventories.length <= 1 ? 0.3 : 1, cursor: inventories.length <= 1 ? "default" : "pointer" }}
                 >
                   🗑️
                 </button>
@@ -157,13 +156,13 @@ export default function InventoryManagerModal({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <button onClick={handleCreateEmpty} style={{ ...btnFull, color: COLORS.green, borderColor: COLORS.green + "44" }}>
+        <button onClick={handleCreateEmpty} style={{ ...btnFull, color: "var(--success)", borderColor: alpha('--success', 27) }}>
           ➕ Crear inventario nuevo (vacío)
         </button>
-        <div style={{ fontSize: 10, color: COLORS.muted, padding: "0 4px", marginTop: -2, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 10, color: "var(--text-secondary)", padding: "0 4px", marginTop: -2, lineHeight: 1.4 }}>
           Arranca sin muebles; los agregas después en el Paso 3.
         </div>
-        <button onClick={handleSaveAsNew} style={{ ...btnFull, color: COLORS.cyan, borderColor: COLORS.cyan + "44" }}>
+        <button onClick={handleSaveAsNew} style={{ ...btnFull, color: "var(--primary)", borderColor: alpha('--primary', 27) }}>
           💾 Guardar inventario actual como nuevo
         </button>
         <button
@@ -171,15 +170,15 @@ export default function InventoryManagerModal({
           disabled={!activeInventoryId}
           style={{
             ...btnFull,
-            color: savedFlash ? COLORS.green : COLORS.amber,
-            borderColor: (savedFlash ? COLORS.green : COLORS.amber) + "44",
+            color: savedFlash ? "var(--success)" : "var(--warning)",
+            borderColor: savedFlash ? alpha('--success', 27) : alpha('--warning', 27),
           }}
         >
           {savedFlash ? "✓ Guardado" : "💾 Sobrescribir activo"}
         </button>
       </div>
 
-      <button onClick={onClose} style={{ ...btnFull, color: COLORS.muted, marginTop: 10 }}>
+      <button onClick={onClose} style={{ ...btnFull, color: "var(--text-secondary)", marginTop: 10 }}>
         Cerrar
       </button>
     </Modal>

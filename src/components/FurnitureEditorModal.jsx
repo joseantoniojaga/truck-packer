@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal.jsx';
-import { COLORS } from '../constants.js';
+import { alpha } from '../styles/util.js';
 
 // Paleta sugerida (botones rápidos debajo del color picker).
 const PALETTE = [
@@ -10,18 +10,18 @@ const PALETTE = [
 ];
 
 const inputStyle = {
-  fontFamily: "JetBrains Mono", fontSize: 12, padding: "6px 8px",
-  background: "#0F172A", border: `1px solid ${COLORS.border}`,
-  borderRadius: 4, color: COLORS.text, outline: "none", width: "100%",
+  fontSize: 12, padding: "6px 8px",
+  background: "var(--bg-subtle)", border: `1px solid var(--border)`,
+  borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none", width: "100%",
   boxSizing: "border-box",
 };
 
-const labelStyle = { fontSize: 10, color: COLORS.muted, marginBottom: 3, display: "block" };
-const errorStyle = { fontSize: 10, color: COLORS.red, marginTop: 3 };
+const labelStyle = { fontSize: 10, color: "var(--text-secondary)", marginBottom: 3, display: "block" };
+const errorStyle = { fontSize: 10, color: "var(--error)", marginTop: 3 };
 
 const baseBtn = {
-  borderRadius: 5, border: `1px solid ${COLORS.border}`, background: "#0F172A",
-  cursor: "pointer", fontFamily: "DM Sans", fontWeight: 600,
+  borderRadius: "var(--radius-sm)", border: `1px solid var(--border)`, background: "var(--bg-subtle)",
+  cursor: "pointer", fontWeight: 600,
   padding: "8px 12px", fontSize: 11,
 };
 
@@ -119,11 +119,11 @@ export default function FurnitureEditorModal({
     <Modal
       open={open} onClose={onClose}
       title={isEdit ? "✏️ Editar mueble" : "➕ Nuevo mueble"}
-      titleColor={COLORS.cyan} accentColor={COLORS.cyan + "44"}
+      titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}
       maxWidth={380}
     >
       {isEdit && (
-        <div style={{ fontSize: 10, color: COLORS.muted, padding: "6px 8px", background: "#0F172A", borderRadius: 4, marginBottom: 10, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 10, color: "var(--text-secondary)", padding: "6px 8px", background: "var(--bg-subtle)", borderRadius: "var(--radius-sm)", marginBottom: 10, lineHeight: 1.4 }}>
           Si cambias las dimensiones, los muebles ya colocados de este tipo NO se actualizarán automáticamente. Reorganiza la carga después.
         </div>
       )}
@@ -175,19 +175,19 @@ export default function FurnitureEditorModal({
           <input
             type="color" value={color}
             onChange={e => setColor(e.target.value)}
-            style={{ width: 40, height: 30, border: `1px solid ${COLORS.border}`, borderRadius: 4, background: "transparent", cursor: "pointer", padding: 2 }}
+            style={{ width: 40, height: 30, border: `1px solid var(--border)`, borderRadius: "var(--radius-sm)", background: "transparent", cursor: "pointer", padding: 2 }}
           />
-          <span style={{ fontFamily: "JetBrains Mono", fontSize: 11, color: COLORS.muted }}>{color}</span>
+          <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{color}</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4 }}>
           {PALETTE.map(c => (
             <button
               key={c} type="button" onClick={() => setColor(c)} title={c}
               style={{
-                height: 22, borderRadius: 4, padding: 0, cursor: "pointer", background: c,
+                height: 22, borderRadius: "var(--radius-sm)", padding: 0, cursor: "pointer", background: c,
                 border: color.toLowerCase() === c.toLowerCase()
-                  ? `2px solid ${COLORS.text}`
-                  : `1px solid ${COLORS.border}`,
+                  ? `2px solid var(--text-primary)`
+                  : `1px solid var(--border)`,
               }}
             />
           ))}
@@ -197,18 +197,18 @@ export default function FurnitureEditorModal({
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
         {isEdit && onDelete && (
           <button onClick={handleDelete}
-                  style={{ ...baseBtn, color: COLORS.red, borderColor: COLORS.red + "44", fontSize: 10, padding: "6px 10px" }}>
+                  style={{ ...baseBtn, color: "var(--error)", borderColor: alpha('--error', 27), fontSize: 10, padding: "6px 10px" }}>
             🗑️ Borrar mueble
           </button>
         )}
         <div style={{ flex: 1 }} />
-        <button onClick={onClose} style={{ ...baseBtn, color: COLORS.muted }}>Cancelar</button>
+        <button onClick={onClose} style={{ ...baseBtn, color: "var(--text-secondary)" }}>Cancelar</button>
         <button
           onClick={handleSave} disabled={!isValid}
           style={{
             ...baseBtn,
-            color: isValid ? COLORS.green : COLORS.muted,
-            borderColor: isValid ? COLORS.green + "44" : COLORS.border,
+            color: isValid ? "var(--success)" : "var(--text-secondary)",
+            borderColor: isValid ? alpha('--success', 27) : "var(--border)",
             opacity: isValid ? 1 : 0.5,
             cursor: isValid ? "pointer" : "not-allowed",
           }}
