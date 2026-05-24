@@ -14,9 +14,10 @@ import { alpha } from './styles/util.js';
 import Topbar from './components/Topbar.jsx';
 import FurnitureCard from './components/FurnitureCard.jsx';
 import CapacityCard from './components/CapacityCard.jsx';
+import ActionBar from './components/ActionBar.jsx';
 import {
   Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Edit2,
-  ChevronDown, ChevronUp, AlertTriangle, Check, Lightbulb, Loader2,
+  AlertTriangle, Check, Lightbulb,
   ArrowLeftRight, SkipBack, Rewind, Pause, SkipForward, Layers,
 } from 'lucide-react';
 
@@ -80,8 +81,8 @@ export default function App(){
   // Tab del visor: '3d' | 'front' | 'right' | 'top' | 'all' (6 vistas)
   const [viewMode,setVM]=useState("3d");
   const [editMode,setEM]=useState(false);
-  const [showStrats,setSS]=useState(false);
   const [computing,setComp]=useState(false);
+  const [runningStrategyId,setRunningStrategyId]=useState(null);
   const [conflict,setConflict]=useState(null);
   const [packMode,setPackMode]=useState("backToFront");
   const [modeSwitchTarget,setModeSwitchTarget]=useState(null);
@@ -252,7 +253,7 @@ export default function App(){
 
   useEffect(()=>{if(!simMode&&simPlayRef.current){clearInterval(simPlayRef.current);simPlayRef.current=null;}},[simMode]);
 
-  const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setSS(false);setComp(false);},50);};
+  const runStrat=(k)=>{setRunningStrategyId(k);setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setComp(false);setRunningStrategyId(null);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
 
   const B={borderRadius:"var(--radius-sm)",border:`1px solid var(--border)`,background:"var(--bg-subtle)",cursor:"pointer",fontWeight:600};
@@ -409,31 +410,6 @@ export default function App(){
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="backToFront"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="backToFront"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><ArrowLeftRight size={14}/>Fondo→Frente</button>
           </div>
 
-          <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"var(--primary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:alpha('--primary', 27),opacity:(computing||placed.length===0)?0.5:1}}>
-              <RotateCcw size={14}/>Reorganizar
-            </button>
-            <button onClick={startSim} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"var(--secondary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:alpha('--secondary', 27),opacity:(computing||placed.length===0)?0.5:1}}>
-              <Play size={14}/>Simular
-            </button>
-          </div>
-
-          <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"var(--warning)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?alpha('--warning', 27):"var(--border)",opacity:computing?0.5:1}}>
-            {computing
-              ?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Loader2 size={14} className="animate-spin"/>Calculando...</span>
-              :<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Sparkles size={14}/>Estrategias</span>} {!computing&&(showStrats?<ChevronUp size={14}/>:<ChevronDown size={14}/>)}
-          </button>
-          {showStrats&&(
-            <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,marginBottom:10,border:`1px solid ${alpha('--warning', 13)}`}}>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {PACKING_STRATEGIES.map(s=>(<button key={s.key} onClick={()=>handleStrat(s.key)} disabled={computing} style={{...B,padding:"8px 12px",display:"flex",alignItems:"flex-start",gap:10,textAlign:"left",opacity:computing?0.5:1}}>
-                  <span style={{fontSize:16,flexShrink:0}}>{s.icon}</span><div><div style={{fontSize:11,color:"var(--text-primary)",fontWeight:600}}>{s.label}</div><div style={{fontSize:9,color:"var(--text-tertiary)",fontWeight:400,marginTop:1}}>{s.desc}</div></div>
-                </button>))}
-              </div>
-            </div>
-          )}
-
-
           <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>Muebles</span>
@@ -536,6 +512,18 @@ export default function App(){
               placedVolume={volL}
               totalVolume={TV}
               formatVolume={fmtV}
+            />
+
+            {/* Action bar flotante abajo-centro */}
+            <ActionBar
+              canReorganize={placed.length>0}
+              canSimulate={placed.length>0}
+              isCalculating={computing}
+              activeStrategyId={runningStrategyId}
+              strategies={PACKING_STRATEGIES}
+              onReorganize={()=>setShowReorgConfirm(true)}
+              onApplyStrategy={handleStrat}
+              onSimulate={startSim}
             />
 
             {/* Contenido del visor */}

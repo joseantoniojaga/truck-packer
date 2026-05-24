@@ -198,6 +198,58 @@ input, textarea, select {
   box-shadow: var(--shadow-sm);
 }
 
+/* Botones del ActionBar flotante */
+.action-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.action-btn--primary {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+.action-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+.action-btn--secondary {
+  background: transparent;
+  color: var(--text-primary);
+}
+.action-btn--secondary:hover:not(:disabled),
+.action-btn--open {
+  background: var(--surface-hover);
+}
+
+/* Opción dentro del dropdown de estrategias */
+.strat-option {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 120ms ease;
+}
+.strat-option:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.strat-option:disabled {
+  cursor: default;
+}
+
 /* Botón "Agregar mueble" con borde punteado */
 .add-furniture-btn {
   width: 100%;
