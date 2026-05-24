@@ -13,6 +13,7 @@ import { useTheme } from './hooks/useTheme.js';
 import { alpha } from './styles/util.js';
 import Topbar from './components/Topbar.jsx';
 import FurnitureCard from './components/FurnitureCard.jsx';
+import CapacityCard from './components/CapacityCard.jsx';
 import {
   Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Edit2,
   ChevronDown, ChevronUp, AlertTriangle, Check, Lightbulb, Loader2,
@@ -76,6 +77,7 @@ export default function App(){
   const [editingFurniture,setEditingFurniture]=useState(null);
   const [placed,setPlaced]=useState([]);
   const [selId,setSelId]=useState(null);
+  // Tab del visor: '3d' | 'front' | 'right' | 'top' | 'all' (6 vistas)
   const [viewMode,setVM]=useState("3d");
   const [editMode,setEM]=useState(false);
   const [showStrats,setSS]=useState(false);
@@ -112,7 +114,6 @@ export default function App(){
 
   const pkC=useMemo(()=>getCounts(placed),[placed]);
   const volL=placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
-  const util=(volL/TV)*100;
   const tLoad=items.reduce((s,i)=>s+i.load,0);
   const tInv=items.reduce((s,i)=>s+i.inv,0);
 
@@ -254,8 +255,6 @@ export default function App(){
   const runStrat=(k)=>{setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setSS(false);setComp(false);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
 
-  const sel=selId?items.find(a=>a.id===selId):null;
-  const selVol=sel?sel.ancho*sel.alto*sel.fondo:0;
   const B={borderRadius:"var(--radius-sm)",border:`1px solid var(--border)`,background:"var(--bg-subtle)",cursor:"pointer",fontWeight:600};
 
   return(
@@ -405,17 +404,6 @@ export default function App(){
         {/* ── IZQUIERDA: controles (35%) ── */}
         <div className="tp-left">
 
-          <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5}}>
-              <span style={{color:"var(--text-secondary)",display:"inline-flex",alignItems:"center",gap:6}}><Package size={14}/>{placed.length} colocadas / {tLoad} pedidas</span>
-              <span style={{fontWeight:600,color:util>85?"var(--error)":util>60?"var(--warning)":"var(--success)"}}>{util.toFixed(1)}%</span>
-            </div>
-            <div style={{background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",height:18,overflow:"hidden"}}>
-              <div style={{width:`${Math.min(util,100)}%`,height:"100%",background:util>85?`linear-gradient(90deg,var(--warning),var(--error))`:`linear-gradient(90deg,var(--primary),var(--success))`,borderRadius:"var(--radius-sm)",transition:"width 0.4s"}}/>
-            </div>
-            <div style={{fontSize:10,color:"var(--text-tertiary)",marginTop:4,textAlign:"right"}}>{fmtV(volL)} / {fmtV(TV)}</div>
-          </div>
-
           <div style={{display:"flex",gap:4,marginBottom:8}}>
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="free"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="free"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Box size={14}/>Libre</button>
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="backToFront"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="backToFront"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><ArrowLeftRight size={14}/>Fondo→Frente</button>
@@ -445,19 +433,6 @@ export default function App(){
             </div>
           )}
 
-          {sel&&(<div style={{background:`${sel.color}12`,border:`1px solid ${sel.color}33`,borderRadius:"var(--radius-md)",padding:10,marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:12,fontWeight:700,color:sel.color}}>{sel.name}</span>
-              <button onClick={()=>setSelId(null)} aria-label="Cerrar" style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",display:"inline-flex",alignItems:"center"}}><X size={16}/></button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:10,color:"var(--text-secondary)"}}>
-              <span>Medidas: <b style={{color:"var(--text-primary)"}}>{sel.ancho}×{sel.alto}×{sel.fondo}cm</b></span>
-              <span>Vol: <b style={{color:"var(--text-primary)"}}>{fmtV(selVol)}</b></span>
-              <span>Inventario: <b style={{color:"var(--text-primary)"}}>{sel.inv}</b></span>
-              <span>A cargar: <b style={{color:"var(--primary)"}}>{sel.load}</b></span>
-              <span>Colocadas: <b style={{color:(pkC[sel.id]||0)>=sel.load?"var(--success)":"var(--warning)"}}>{pkC[sel.id]||0}</b></span>
-            </div>
-          </div>)}
 
           <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
@@ -526,45 +501,94 @@ export default function App(){
         {/* ── DERECHA: visual (65%) ── */}
         <div className="tp-right">
 
-          <div style={{display:"flex",gap:3,marginBottom:8,flexShrink:0}}>
-            <button onClick={()=>setVM("3d")} style={{...B,flex:1,padding:"6px 0",borderRadius:"var(--radius-sm)",fontSize:11,background:viewMode==="3d"?"var(--primary)":"var(--surface)",color:viewMode==="3d"?"var(--bg-base)":"var(--text-tertiary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Box size={14}/>3D</button>
-            <button onClick={()=>setVM("grid")} style={{...B,flex:1,padding:"6px 0",borderRadius:"var(--radius-sm)",fontSize:11,background:viewMode==="grid"?"var(--primary)":"var(--surface)",color:viewMode==="grid"?"var(--bg-base)":"var(--text-tertiary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Layers size={14}/>6 Vistas</button>
+          <div className="viewer-container">
+            {/* Tabs flotantes arriba-izquierda */}
+            <div className="viewer-tabs">
+              {[
+                { key: "3d",    label: "3D" },
+                { key: "front", label: "Frente" },
+                { key: "right", label: "Lado" },
+                { key: "top",   label: "Top" },
+              ].map(t => (
+                <button
+                  key={t.key}
+                  type="button"
+                  className={`viewer-tab${viewMode===t.key ? " viewer-tab--active" : ""}`}
+                  onClick={()=>setVM(t.key)}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`viewer-tab${viewMode==="all" ? " viewer-tab--active" : ""}`}
+                onClick={()=>setVM("all")}
+                title="Ver las 6 vistas"
+              >
+                <Layers size={14}/>Todas
+              </button>
+            </div>
+
+            {/* CapacityCard flotante arriba-derecha */}
+            <CapacityCard
+              placedCount={placed.length}
+              totalRequested={tLoad}
+              placedVolume={volL}
+              totalVolume={TV}
+              formatVolume={fmtV}
+            />
+
+            {/* Contenido del visor */}
+            <div className="viewer-content" style={{padding:viewMode==="all"?16:0,overflowY:viewMode==="all"?"auto":"hidden"}}>
+              {tLoad===0 ? (
+                <div style={{textAlign:"center",color:"var(--text-tertiary)",fontSize:13,padding:"40px"}}>
+                  Usa + o una estrategia
+                </div>
+              ) : viewMode==="3d" ? (
+                <div style={{width:"100%",height:"100%"}}>
+                  <Viewer3D placed={simMode?simSequence.map(s=>s.item):placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut} simMode={simMode} simStep={simStep} trailer={TR}/>
+                </div>
+              ) : viewMode==="all" ? (
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,width:"100%",alignSelf:"flex-start"}}>
+                  {["top","bottom","right","left","front","back"].map(vk=>(
+                    <OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
+                  ))}
+                </div>
+              ) : (
+                <div style={{width:"100%",padding:24,paddingTop:80}}>
+                  <OV placed={placed} vk={viewMode} selId={selId} onSel={setSelId} trailer={TR}/>
+                </div>
+              )}
+            </div>
           </div>
 
-          {viewMode==="3d"&&(<div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,flex:1,minHeight:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-            {tLoad===0?<div style={{textAlign:"center",color:"var(--border)",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:<Viewer3D placed={simMode?simSequence.map(s=>s.item):placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut} simMode={simMode} simStep={simStep} trailer={TR}/>}
-            {simMode?(
-              <div style={{marginTop:8,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,border:`1px solid ${alpha('--secondary', 27)}`,flexShrink:0}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <span style={{fontSize:11,fontWeight:600,color:"var(--secondary)"}}>Simulador de carga</span>
-                  <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"var(--error)",borderColor:alpha('--error', 27),display:"inline-flex",alignItems:"center",gap:4}}><X size={12}/>Salir</button>
-                </div>
-                <div style={{background:"var(--surface)",borderRadius:"var(--radius-sm)",height:6,marginBottom:8,overflow:"hidden"}}>
-                  <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,var(--secondary),var(--primary))`,borderRadius:"var(--radius-sm)",transition:"width 0.3s"}}/>
-                </div>
-                {simStep>0&&simStep<=simSequence.length&&(
-                  <div style={{fontSize:11,color:"var(--text-secondary)",marginBottom:8,background:"var(--surface)",borderRadius:"var(--radius-sm)",padding:"6px 8px",lineHeight:1.4}}>
-                    <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
-                  </div>
-                )}
-                {simStep===0&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>Presiona <Play size={12} style={{display:"inline-block"}}/> para avanzar paso a paso</div>}
-                {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:"var(--success)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><Check size={14}/>Carga completa ({simSequence.length} muebles)</div>}
-                <div style={{display:"flex",gap:4,justifyContent:"center"}}>
-                  <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Primer paso" aria-label="Primer paso"><SkipBack size={14}/></button>
-                  <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Anterior" aria-label="Anterior"><Rewind size={14}/></button>
-                  <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27),display:"inline-flex",alignItems:"center",gap:6}}>{simPlaying?<><Pause size={14}/>Pausar</>:<><Play size={14}/>Auto</>}</button>
-                  <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Siguiente" aria-label="Siguiente"><Play size={14}/></button>
-                  <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Último paso" aria-label="Último paso"><SkipForward size={14}/></button>
-                </div>
+          {simMode ? (
+            <div style={{marginTop:8,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,border:`1px solid ${alpha('--secondary', 27)}`,flexShrink:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <span style={{fontSize:11,fontWeight:600,color:"var(--secondary)"}}>Simulador de carga</span>
+                <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"var(--error)",borderColor:alpha('--error', 27),display:"inline-flex",alignItems:"center",gap:4}}><X size={12}/>Salir</button>
               </div>
-            ):(
-              <p style={{margin:"6px 0 0",fontSize:9,color:"var(--text-tertiary)",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
-            )}
-          </div>)}
-          {viewMode==="grid"&&(<div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,flex:1,minHeight:0,overflowY:"auto"}}>
-            {tLoad===0?<div style={{textAlign:"center",color:"var(--border)",fontSize:11,padding:"40px 0"}}>Usa + o una estrategia</div>:(
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{["top","bottom","right","left","front","back"].map(vk=>(<OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>))}</div>)}
-          </div>)}
+              <div style={{background:"var(--surface)",borderRadius:"var(--radius-sm)",height:6,marginBottom:8,overflow:"hidden"}}>
+                <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,var(--secondary),var(--primary))`,borderRadius:"var(--radius-sm)",transition:"width 0.3s"}}/>
+              </div>
+              {simStep>0&&simStep<=simSequence.length&&(
+                <div style={{fontSize:11,color:"var(--text-secondary)",marginBottom:8,background:"var(--surface)",borderRadius:"var(--radius-sm)",padding:"6px 8px",lineHeight:1.4}}>
+                  <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
+                </div>
+              )}
+              {simStep===0&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>Presiona <Play size={12} style={{display:"inline-block"}}/> para avanzar paso a paso</div>}
+              {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:"var(--success)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><Check size={14}/>Carga completa ({simSequence.length} muebles)</div>}
+              <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Primer paso" aria-label="Primer paso"><SkipBack size={14}/></button>
+                <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Anterior" aria-label="Anterior"><Rewind size={14}/></button>
+                <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27),display:"inline-flex",alignItems:"center",gap:6}}>{simPlaying?<><Pause size={14}/>Pausar</>:<><Play size={14}/>Auto</>}</button>
+                <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Siguiente" aria-label="Siguiente"><Play size={14}/></button>
+                <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Último paso" aria-label="Último paso"><SkipForward size={14}/></button>
+              </div>
+            </div>
+          ) : (
+            <p style={{margin:"8px 0 0",fontSize:11,color:"var(--text-tertiary)",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
+          )}
 
         </div>{/* end right */}
 
