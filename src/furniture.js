@@ -1,20 +1,15 @@
 export class Furniture {
-  constructor({ id, name, width, height, depth, color, inventory }) {
+  constructor({ id, name, ancho, alto, fondo, color, inv }) {
     this.id = id;
     this.name = name;
     this.color = color;
-    this.width = width;
-    this.height = height;
-    this.depth = depth;
-    this.inventory = inventory;
-    // Own properties so spread ({...instance}) copies them correctly
-    this.ancho = width;
-    this.alto = height;
-    this.fondo = depth;
-    this.inv = inventory;
+    this.ancho = ancho;
+    this.alto = alto;
+    this.fondo = fondo;
+    this.inv = inv;
   }
-  get volume() { return this.width * this.height * this.depth; }
-  get dimensions() { return [this.width, this.height, this.depth]; }
+  get volume() { return this.ancho * this.alto * this.fondo; }
+  get dimensions() { return [this.ancho, this.alto, this.fondo]; }
 }
 
 function createFurniture(props) {
@@ -22,13 +17,13 @@ function createFurniture(props) {
 }
 
 export const FURNITURE = [
-  createFurniture({ id:1, name:"Tocador Boston",    color:"#E07A5F", width:122.5, height:89.5, depth:42,    inventory:16 }),
-  createFurniture({ id:2, name:"Portaluna Habana",  color:"#7B9ACC", width:81,    height:172,  depth:7.5,   inventory:28 }),
-  createFurniture({ id:3, name:"Cabecera Hampton",  color:"#81B29A", width:143,   height:9,    depth:151,   inventory:38 }),
-  createFurniture({ id:4, name:"Buró Hampton",      color:"#F2CC8F", width:65,    height:65,   depth:40,    inventory:32 }),
-  createFurniture({ id:5, name:"Base Ind. Cielo",   color:"#6A994E", width:99,    height:30.5, depth:191,   inventory:12 }),
-  createFurniture({ id:6, name:"Base Mat. Cielo",   color:"#A7C957", width:136.5, height:30.5, depth:191,   inventory:10 }),
-  createFurniture({ id:7, name:"Base Ind. Sierra",  color:"#BC4749", width:99.5,  height:36,   depth:199.5, inventory:25 }),
-  createFurniture({ id:8, name:"Base Mat. Sierra",  color:"#9B5DE5", width:137,   height:36,   depth:199.5, inventory:32 }),
-  createFurniture({ id:9, name:"Base Queen Sierra", color:"#0F4C5C", width:150,   height:36,   depth:199.5, inventory:34 }),
+  createFurniture({ id:1, name:"Tocador Boston",    color:"#E07A5F", ancho:122.5, alto:89.5, fondo:42,    inv:16 }),
+  createFurniture({ id:2, name:"Portaluna Habana",  color:"#7B9ACC", ancho:81,    alto:172,  fondo:7.5,   inv:28 }),
+  createFurniture({ id:3, name:"Cabecera Hampton",  color:"#81B29A", ancho:143,   alto:9,    fondo:151,   inv:38 }),
+  createFurniture({ id:4, name:"Buró Hampton",      color:"#F2CC8F", ancho:65,    alto:65,   fondo:40,    inv:32 }),
+  createFurniture({ id:5, name:"Base Ind. Cielo",   color:"#6A994E", ancho:99,    alto:30.5, fondo:191,   inv:12 }),
+  createFurniture({ id:6, name:"Base Mat. Cielo",   color:"#A7C957", ancho:136.5, alto:30.5, fondo:191,   inv:10 }),
+  createFurniture({ id:7, name:"Base Ind. Sierra",  color:"#BC4749", ancho:99.5,  alto:36,   fondo:199.5, inv:25 }),
+  createFurniture({ id:8, name:"Base Mat. Sierra",  color:"#9B5DE5", ancho:137,   alto:36,   fondo:199.5, inv:32 }),
+  createFurniture({ id:9, name:"Base Queen Sierra", color:"#0F4C5C", ancho:150,   alto:36,   fondo:199.5, inv:34 }),
 ];
