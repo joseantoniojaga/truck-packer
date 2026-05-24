@@ -1,52 +1,52 @@
 # Truck Packer 🚛
 
-Calculadora 3D de carga para tráiler de mudanza: acomoda muebles en el espacio disponible con física real (gravedad, soporte, sin solapamientos).
+3D load calculator for moving-truck furniture: arranges items in the available space with real physics (gravity, support, no overlaps).
 
-## ¿Qué es?
+## What is it?
 
-Truck Packer es una aplicación web que resuelve un problema concreto del día a día de mudanzas de muebles: **¿cuántos muebles caben en el tráiler y cómo acomodarlos?** Sobre un tráiler de 16.15 m × 2.47 m × 2.80 m (largo × ancho × alto), el usuario carga su inventario (9 muebles base preconfigurados o muebles custom que él define) y la aplicación calcula la disposición tridimensional óptima. El algoritmo respeta gravedad (los items no flotan), exige al menos 80% de soporte para apilar, y aprovecha las 6 rotaciones posibles de cada caja para maximizar el aprovechamiento. La app corre 100% en el navegador, sin servidor — toda la persistencia ocurre en `localStorage`.
+Truck Packer is a web app that solves a concrete real-world problem in furniture moves: **how many pieces fit in the truck, and how should they be arranged?** Given a 16.15 m × 2.47 m × 2.80 m trailer (length × width × height), the user loads inventory (9 preconfigured base pieces or custom furniture they define) and the app computes the optimal 3D arrangement. The algorithm respects gravity (items don't float), requires at least 80% support to stack, and exploits the 6 possible rotations of each box to maximize space usage. The app runs 100% in the browser — no server, all persistence via `localStorage`.
 
 ## Demo / Screenshots
 
-<!-- TODO: agregar screenshots cuando el UI esté pulido -->
+<!-- TODO: add screenshots once UI is polished -->
 
-## Stack técnico
+## Tech stack
 
-- **React 18.3** con hooks
-- **Three.js 0.170** (r170) para la visualización 3D
-- **Vite 6** como bundler y dev server
-- **Vitest 4** + **React Testing Library 16** para los tests
-- **jsdom** como entorno de tests sin browser real
-- **localStorage** para persistencia de inventarios
+- **React 18.3** with hooks
+- **Three.js 0.170** (r170) for 3D visualization
+- **Vite 6** as bundler and dev server
+- **Vitest 4** + **React Testing Library 16** for tests
+- **jsdom** as the test environment (no real browser)
+- **localStorage** for inventory persistence
 
-## Estructura del proyecto
+## Project structure
 
 ```
 src/
-├── App.jsx                    # Componente raíz, orquesta UI y estado global
-├── main.jsx                   # Entry point de Vite
-├── packing.js                 # Algoritmo de empaquetado 3D (column packing + findBestPos)
-├── packingStrategies.js       # Strategy Pattern: 5 estrategias de auto-fill intercambiables
-├── swapCalculator.js          # Intercambio inteligente: qué muebles quitar para meter uno nuevo
-├── loadingSequence.js         # Orden de carga paso a paso (fondo → frente, base → apilado)
-├── furniture.js               # Modelo Furniture + inventario base de 9 muebles
-├── inventoryStorage.js        # CRUD de inventarios en localStorage
-├── constants.js               # Constantes compartidas (colores, tolerancias, score weights)
+├── App.jsx                    # Root component, orchestrates UI and global state
+├── main.jsx                   # Vite entry point
+├── packing.js                 # 3D packing algorithm (column packing + findBestPos)
+├── packingStrategies.js       # Strategy Pattern: 5 interchangeable auto-fill strategies
+├── swapCalculator.js          # Smart swap: what to remove to fit a new piece
+├── loadingSequence.js         # Step-by-step loading order (back → front, base → stacked)
+├── furniture.js               # Furniture model + base inventory of 9 pieces
+├── inventoryStorage.js        # Inventory CRUD in localStorage
+├── constants.js               # Shared constants (colors, tolerances, score weights)
 ├── components/
-│   ├── Modal.jsx                  # Modal genérico reutilizable
-│   ├── Viewer3D.jsx               # Vista 3D con Three.js (controles orbit + zoom)
-│   ├── OrthoView.jsx              # Vista 2D ortográfica (top/bottom/front/back/left/right)
-│   ├── InventoryManagerModal.jsx  # Crear, cargar, renombrar y borrar inventarios
-│   └── FurnitureEditorModal.jsx   # Crear, editar y borrar muebles custom
+│   ├── Modal.jsx                  # Reusable generic modal
+│   ├── Viewer3D.jsx               # 3D view with Three.js (orbit controls + zoom)
+│   ├── OrthoView.jsx              # 2D orthographic view (top/bottom/front/back/left/right)
+│   ├── InventoryManagerModal.jsx  # Create, load, rename and delete inventories
+│   └── FurnitureEditorModal.jsx   # Create, edit and delete custom furniture
 ├── hooks/
-│   └── useHoldRepeat.js       # Hook para botones "presionar y mantener para repetir"
+│   └── useHoldRepeat.js       # Hook for "press-and-hold to repeat" buttons
 └── test/
-    └── setup.js               # Setup global de Vitest (jest-dom + mock de localStorage)
+    └── setup.js               # Vitest global setup (jest-dom + localStorage mock)
 ```
 
-Total: ~10 archivos de lógica + 5 componentes + 1 hook, todos por debajo de 600 líneas.
+Around 10 logic files + 5 components + 1 hook, all under 600 lines each.
 
-## Instalación
+## Installation
 
 ```bash
 git clone https://github.com/joseantoniojaga/truck-packer.git
@@ -54,73 +54,74 @@ cd truck-packer
 npm install
 ```
 
-Requiere **Node 18+** (recomendado Node 20).
+Requires **Node 18+** (Node 20 recommended).
 
-## Comandos disponibles
+## Available commands
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `npm run dev` | Servidor de desarrollo en `http://localhost:5173` con hot-reload |
-| `npm run build` | Build de producción a `dist/` |
-| `npm run preview` | Sirve el build de producción para verificarlo localmente |
-| `npm test` | Corre todos los tests una vez y termina (para CI o pre-commit) |
-| `npm run test:watch` | Tests en modo watch — re-corren al cambiar archivos |
-| `npm run test:ui` | Interfaz web interactiva de Vitest |
+| `npm run dev` | Dev server at `http://localhost:5173` with hot-reload |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serves the production build locally for verification |
+| `npm test` | Runs all tests once and exits (for CI or pre-commit) |
+| `npm run test:watch` | Tests in watch mode — re-run on file changes |
+| `npm run test:ui` | Vitest interactive web UI |
 
-## Cómo funciona el algoritmo de empaquetado
+## How the packing algorithm works
 
-El núcleo es **column packing con relleno**: el tráiler se llena sección por sección avanzando en el eje X (de fondo a frente). Para cada sección, el algoritmo evalúa todas las combinaciones de (tipo de mueble × rotación) y elige la que maximiza el **volumen colocado por unidad de avance** — equivalente a maximizar la utilización de la sección transversal `ancho × alto`. Una vez elegida, coloca el bloque uniforme `nW × nH` (cuántos caben a lo ancho × cuántos a lo alto) y avanza X por el `largo` de esa rotación.
+The core is **column packing with fill-in**: the trailer is filled section by section along the X axis (back to front). For each section, the algorithm evaluates every combination of (furniture type × rotation) and picks the one that maximizes **volume placed per unit of X advance** — equivalent to maximizing cross-section utilization (`width × height`). Once chosen, it places the uniform `nW × nH` block (how many fit width-wise × how many height-wise) and advances X by the rotation's `length`.
 
-Cuando ya no hay un tipo que llene bloque limpio en la sección actual, una **segunda pasada** usa `findBestPos` para colocar items individuales rellenando huecos: enumera posiciones candidatas a partir de los bordes de items ya colocados, evalúa cada una con un score que penaliza solapamiento, mala posición y falta de soporte, y elige la mejor.
+When no type forms a clean block in the current section, a **second pass** uses `findBestPos` to place individual items in the gaps: it enumerates candidate positions from the edges of already-placed items, scores each candidate with penalties for overlap, bad position and lack of support, and picks the best.
 
-Las restricciones que el algoritmo siempre respeta:
-- **Sin flotación:** todo item con `z > 0` debe estar apoyado sobre otros items o sobre el piso.
-- **80% de soporte:** un item solo se apila si su base está cubierta en ≥ 80% del área (`SUPPORT_RATIO_THRESHOLD` en `constants.js`).
-- **Sin solapamientos:** chequeo geométrico con tolerancia de 0.1 cm.
-- **Dentro del tráiler:** ningún item puede salirse de las dimensiones `1615.4 × 247 × 280 cm`.
+Constraints the algorithm always enforces:
 
-## Features actuales
+- **No floating:** any item with `z > 0` must rest on other items or the floor.
+- **80% support:** an item is only stacked if its base is covered ≥ 80% by area (`SUPPORT_RATIO_THRESHOLD` in `constants.js`).
+- **No overlaps:** geometric check with 0.1 cm tolerance.
+- **Inside the trailer:** no item exits the `1615.4 × 247 × 280 cm` bounds.
 
-- **Vista 3D interactiva** con controles orbit (mouse y touch), zoom in/out, resaltado del item seleccionado.
-- **6 vistas 2D ortográficas** (superior, inferior, frontal, trasera, derecha, izquierda) sincronizadas.
-- **Edición manual del inventario:** botones `+`/`−` y inputs numéricos editables por mueble.
-- **5 estrategias de auto-fill** intercambiables: máx piezas, máx volumen, grandes primero, planos primero, balanceado.
-- **Simulador paso a paso** que muestra el orden de carga real (fondo → frente, base → apilado).
-- **Intercambio inteligente:** cuando el camión está lleno y el usuario quiere meter otro mueble, sugiere qué quitar.
-- **Inventarios múltiples** guardados en `localStorage` — cambia entre ellos sin perder datos.
-- **CRUD de muebles custom:** crea, edita y elimina muebles propios con nombre, dimensiones, inventario y color.
-- **Dos modos de empaque:** "back to front" (llenar de fondo a frente, prioriza X bajo) y "free" (apilar libre, prioriza Z bajo).
+## Current features
 
-## Patrones de diseño aplicados
+- **Interactive 3D view** with orbit controls (mouse and touch), zoom in/out, selected-item highlight.
+- **6 orthographic 2D views** (top, bottom, front, back, right, left) kept in sync.
+- **Manual inventory editing:** `+`/`−` buttons and editable numeric inputs per piece.
+- **5 interchangeable auto-fill strategies:** max pieces, max volume, big first, flat first, balanced.
+- **Step-by-step loading simulator** showing the real loading order (back → front, base → stacked).
+- **Smart swap:** when the truck is full and the user wants to add another piece, it suggests what to remove.
+- **Multiple inventories** persisted in `localStorage` — switch between them without losing data.
+- **Custom furniture CRUD:** create, edit and delete your own pieces with name, dimensions, inventory and color.
+- **Two packing modes:** "back to front" (fill from the back, prioritizes low X) and "free" (stack freely, prioritizes low Z).
 
-- **Strategy Pattern** — Cada estrategia de auto-fill es un objeto literal con interfaz `{ key, label, icon, desc, execute(items, trailer, mode) }` en `packingStrategies.js`. Agregar una nueva no requiere tocar `quickStrat` ni la UI (Open/Closed Principle).
-- **Custom hooks (React)** — `useHoldRepeat` encapsula el comportamiento "press and hold = repetir acción" para los botones `+/−`, eliminando state intermedio y `useEffect` de orchestración del componente padre.
-- **Component composition** — `<Modal>` es un wrapper genérico que reciben los 6 modales del App (conflict, mode-switch, strategy-confirm, pending-add, swap-options, reorg-confirm) más los modales especializados de inventario y mueble.
-- **Separation of concerns** — La lógica de packing vive en módulos puros sin dependencias de React (`packing.js`, `packingStrategies.js`, `swapCalculator.js`, `loadingSequence.js`); los componentes solo orquestan UI y consumen esas funciones.
+## Design patterns applied
+
+- **Strategy Pattern** — Each auto-fill strategy is a literal object with the interface `{ key, label, icon, desc, execute(items, trailer, mode) }` in `packingStrategies.js`. Adding a new one requires no changes to `quickStrat` or the UI (Open/Closed Principle).
+- **Custom hooks (React)** — `useHoldRepeat` encapsulates the "press and hold = repeat action" behavior for the `+/−` buttons, removing intermediate state and an orchestration `useEffect` from the parent component.
+- **Component composition** — `<Modal>` is a generic wrapper consumed by the 6 App modals (conflict, mode-switch, strategy-confirm, pending-add, swap-options, reorg-confirm) plus the specialized inventory and furniture modals.
+- **Separation of concerns** — Packing logic lives in pure modules with no React dependencies (`packing.js`, `packingStrategies.js`, `swapCalculator.js`, `loadingSequence.js`); components only orchestrate UI and consume those functions.
 
 ## Tests
 
-122 tests automatizados con Vitest + React Testing Library, distribuidos en 8 archivos:
+122 automated tests with Vitest + React Testing Library, spread across 8 files:
 
-| Archivo | Tests | Cubre |
+| File | Tests | Covers |
 |---|---:|---|
-| `src/packing.test.js` | 59 | Algoritmo de packing, gravedad, soporte, sin huecos, no overlaps, dentro del tráiler, performance |
-| `src/__tests__/inventoryStorage.test.js` | 10 | CRUD de inventarios, JSON corrupto, items malformados |
-| `src/__tests__/packingStrategies.test.js` | 6 | Strategy Pattern: contrato de cada estrategia, getStrategy, error handling |
-| `src/__tests__/App.integration.test.jsx` | 10 | Flujos end-to-end: boot, crear inventario, CRUD mueble, input editable |
-| `src/components/__tests__/Modal.test.jsx` | 5 | Render condicional, props, styling |
-| `src/components/__tests__/InventoryManagerModal.test.jsx` | 10 | Cargar, renombrar, borrar, crear vacío, snapshot, sobrescribir |
-| `src/components/__tests__/FurnitureEditorModal.test.jsx` | 17 | Validaciones (nombre único, dimensiones, volumen), guardar, borrar, defensive |
-| `src/hooks/__tests__/useHoldRepeat.test.js` | 5 | Press inmediato, repeat con intervalo, release, unmount, callback dinámico |
+| `src/packing.test.js` | 59 | Packing algorithm, gravity, support, no gaps, no overlaps, inside trailer, performance |
+| `src/__tests__/inventoryStorage.test.js` | 10 | Inventory CRUD, corrupted JSON, malformed items |
+| `src/__tests__/packingStrategies.test.js` | 6 | Strategy Pattern: per-strategy contract, getStrategy, error handling |
+| `src/__tests__/App.integration.test.jsx` | 10 | End-to-end flows: boot, create inventory, furniture CRUD, editable input |
+| `src/components/__tests__/Modal.test.jsx` | 5 | Conditional render, props, styling |
+| `src/components/__tests__/InventoryManagerModal.test.jsx` | 10 | Load, rename, delete, create-empty, snapshot, overwrite |
+| `src/components/__tests__/FurnitureEditorModal.test.jsx` | 17 | Validations (unique name, dimensions, volume), save, delete, defensive |
+| `src/hooks/__tests__/useHoldRepeat.test.js` | 5 | Immediate press, repeat with interval, release, unmount, dynamic callback |
 
-**Tiempo total:** ~5 segundos.
+**Total runtime:** ~5 seconds.
 
-Three.js está mockeado en los tests de integración mediante `vi.mock('three', …)` para que App.jsx sea renderizable en `jsdom` sin necesidad de WebGL real.
+Three.js is mocked in integration tests via `vi.mock('three', …)` so App.jsx is renderable in `jsdom` without real WebGL.
 
-## Autor
+## Author
 
 Jose Antonio Gonzalez Jaga · <joseantoniojaga@hotmail.com>
 
-## Licencia
+## License
 
-Privado / no distribuible.
+Private / not distributable.
