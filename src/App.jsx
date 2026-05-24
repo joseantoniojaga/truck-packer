@@ -9,6 +9,7 @@ import InventoryManagerModal from './components/InventoryManagerModal.jsx';
 import FurnitureEditorModal from './components/FurnitureEditorModal.jsx';
 import Viewer3D from './components/Viewer3D.jsx';
 import OV from './components/OrthoView.jsx';
+import { useHoldRepeat } from './hooks/useHoldRepeat.js';
 import { COLORS } from './constants.js';
 import {
   loadInventories,
@@ -72,7 +73,6 @@ export default function App(){
   const [pendingAdd,setPendingAdd]=useState(null);
   const [showReorgConfirm,setShowReorgConfirm]=useState(false);
   const [swapOptions,setSwapOptions]=useState(null);
-  const [holdAction,setHoldAction]=useState(null);
   const [simMode,setSimMode]=useState(false);
   const [simStep,setSimStep]=useState(0);
   const [simSequence,setSimSequence]=useState([]);
@@ -90,27 +90,11 @@ export default function App(){
   const onZoomIn=()=>{stRef.current.radius=Math.max(400,Math.min(3500,stRef.current.radius-200));};
   const onZoomOut=()=>{stRef.current.radius=Math.max(400,Math.min(3500,stRef.current.radius+200));};
 
-  const holdRef=useRef(null);
-  const startHold=(type,id)=>{
-    setHoldAction({type,id});
-    holdRef.current=setInterval(()=>{
-      setHoldAction(prev=>prev?{...prev}:null);
-    },150);
-  };
-  const stopHold=()=>{
-    clearInterval(holdRef.current);
-    holdRef.current=null;
-    setHoldAction(null);
-  };
-
-  useEffect(()=>{
-    if(!holdAction)return;
-    const{type,id}=holdAction;
-    if(type==='add')addOne(id);
-    else if(type==='remove')removeOne(id);
-    else if(type==='invUp')setInv(id,(items.find(x=>x.id===id)?.inv||0)+1);
-    else if(type==='invDown')setInv(id,(items.find(x=>x.id===id)?.inv||0)-1);
-  },[holdAction]);
+  // Hold-to-repeat: cada uno dispara la acción al press y la repite cada 150ms.
+  const addHold=useHoldRepeat(id=>addOne(id));
+  const removeHold=useHoldRepeat(id=>removeOne(id));
+  const invUpHold=useHoldRepeat(id=>setInv(id,(items.find(x=>x.id===id)?.inv||0)+1));
+  const invDownHold=useHoldRepeat(id=>setInv(id,(items.find(x=>x.id===id)?.inv||0)-1));
 
   const pkC=useMemo(()=>getCounts(placed),[placed]);
   const volL=placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
@@ -488,7 +472,7 @@ export default function App(){
                   <div style={{fontSize:9,color:"#475569"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
                 {!editMode&&<span style={{fontFamily:"JetBrains Mono",fontSize:11,fontWeight:600,color:a.load===0?"#64748B":pk>=a.load?COLORS.green:COLORS.amber,minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('invDown',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invDown',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();invDownHold.start(a.id);}} onMouseUp={invDownHold.stop} onMouseLeave={invDownHold.stop} onTouchStart={e=>{e.stopPropagation();invDownHold.start(a.id);}} onTouchEnd={invDownHold.stop} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
                   <input
                     type="number" className="tp-qty" value={a.inv} min={0} max={999}
                     onChange={e=>{const v=e.target.value;setInv(a.id, v===""?0:Math.max(0,Math.min(999,parseInt(v,10)||0)));}}
@@ -496,9 +480,9 @@ export default function App(){
                     onFocus={e=>e.target.select()}
                     style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.amber,minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
                   />
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('invUp',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('invUp',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();invUpHold.start(a.id);}} onMouseUp={invUpHold.stop} onMouseLeave={invUpHold.stop} onTouchStart={e=>{e.stopPropagation();invUpHold.start(a.id);}} onTouchEnd={invUpHold.stop} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('remove',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('remove',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();removeHold.start(a.id);}} onMouseUp={removeHold.stop} onMouseLeave={removeHold.stop} onTouchStart={e=>{e.stopPropagation();removeHold.start(a.id);}} onTouchEnd={removeHold.stop} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
                   <input
                     type="number" className="tp-qty" value={a.load} min={0} max={a.inv}
                     onChange={e=>{const v=e.target.value;setLoad(a.id, v===""?0:(parseInt(v,10)||0));}}
@@ -506,7 +490,7 @@ export default function App(){
                     onFocus={e=>e.target.select()}
                     style={{fontFamily:"JetBrains Mono",fontSize:12,color:COLORS.cyan,minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
                   />
-                  <button onMouseDown={e=>{e.stopPropagation();startHold('add',a.id);}} onMouseUp={stopHold} onMouseLeave={stopHold} onTouchStart={e=>{e.stopPropagation();startHold('add',a.id);}} onTouchEnd={stopHold} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();addHold.start(a.id);}} onMouseUp={addHold.stop} onMouseLeave={addHold.stop} onTouchStart={e=>{e.stopPropagation();addHold.start(a.id);}} onTouchEnd={addHold.stop} style={{...B,width:22,height:22,borderRadius:4,color:COLORS.muted,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
                 </div>)}
                 <button
                   onClick={e=>{e.stopPropagation();setEditingFurniture(a);setShowFurnitureEditor(true);}}
