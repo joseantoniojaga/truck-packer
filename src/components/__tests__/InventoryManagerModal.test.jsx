@@ -30,7 +30,8 @@ describe('InventoryManagerModal — render', () => {
     mountModal({ inventories: [inv], activeInventoryId: 'a' });
 
     expect(screen.getByText('Solo')).toBeInTheDocument();
-    expect(screen.getByText('✓')).toBeInTheDocument();
+    // El inventario activo muestra un icono Check con aria-label "Activo"
+    expect(screen.getByLabelText('Activo')).toBeInTheDocument();
     expect(screen.getByText('1 tipo de mueble')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cargar' })).toBeDisabled();
     // Renombrar (✏️) y Borrar (🗑️) están presentes pero Borrar disabled (único)
@@ -202,7 +203,7 @@ describe('InventoryManagerModal — acciones', () => {
     expect(after.items[0].load).toBeUndefined();
 
     // Flash visible inmediatamente después del click
-    expect(screen.getByText('✓ Guardado')).toBeInTheDocument();
+    expect(screen.getByText('Guardado')).toBeInTheDocument();
 
     // Pasa el timeout y el flash desaparece
     vi.advanceTimersByTime(1600);

@@ -25,6 +25,21 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
 });
 
+// jsdom no implementa matchMedia; lo stubeamos con prefer-light por default.
+// Tests específicos (useTheme.test) lo sobreescriben con su propio stub.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  });
+}
+
 beforeEach(() => {
   globalThis.localStorage.clear();
 });

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
 import { alpha } from '../styles/util.js';
-import { FolderOpen, Edit2, Trash2, Plus, Save } from 'lucide-react';
+import { FolderOpen, Edit2, Trash2, Plus, Save, Check } from 'lucide-react';
 import {
   loadInventories,
   setActiveInventoryId as persistActiveId,
@@ -126,7 +126,7 @@ export default function InventoryManagerModal({
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                  {isActive && <span style={{ color: "var(--success)" }}>✓</span>}
+                  {isActive && <Check size={14} style={{ color: "var(--success)" }} aria-label="Activo" />}
                   <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inv.name}</span>
                 </div>
                 <div style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 2 }}>
@@ -175,7 +175,9 @@ export default function InventoryManagerModal({
             borderColor: savedFlash ? alpha('--success', 27) : alpha('--warning', 27),
           }}
         >
-          {savedFlash ? <>✓ Guardado</> : <><Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Sobrescribir activo</>}
+          {savedFlash
+            ? <><Check size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Guardado</>
+            : <><Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Sobrescribir activo</>}
         </button>
       </div>
 
