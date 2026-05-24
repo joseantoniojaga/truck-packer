@@ -9,12 +9,12 @@ import InventoryManagerModal from './components/InventoryManagerModal.jsx';
 import FurnitureEditorModal from './components/FurnitureEditorModal.jsx';
 import Viewer3D from './components/Viewer3D.jsx';
 import OV from './components/OrthoView.jsx';
-import { useHoldRepeat } from './hooks/useHoldRepeat.js';
 import { useTheme } from './hooks/useTheme.js';
 import { alpha } from './styles/util.js';
 import Topbar from './components/Topbar.jsx';
+import FurnitureCard from './components/FurnitureCard.jsx';
 import {
-  Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Minus, Edit2,
+  Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Edit2,
   ChevronDown, ChevronUp, AlertTriangle, Check, Lightbulb, Loader2,
   ArrowLeftRight, SkipBack, Rewind, Pause, SkipForward, Layers,
 } from 'lucide-react';
@@ -107,11 +107,8 @@ export default function App(){
   const onZoomIn=()=>{stRef.current.radius=Math.max(400,Math.min(3500,stRef.current.radius-200));};
   const onZoomOut=()=>{stRef.current.radius=Math.max(400,Math.min(3500,stRef.current.radius+200));};
 
-  // Hold-to-repeat: cada uno dispara la acción al press y la repite cada 150ms.
-  const addHold=useHoldRepeat(id=>addOne(id));
-  const removeHold=useHoldRepeat(id=>removeOne(id));
-  const invUpHold=useHoldRepeat(id=>setInv(id,(items.find(x=>x.id===id)?.inv||0)+1));
-  const invDownHold=useHoldRepeat(id=>setInv(id,(items.find(x=>x.id===id)?.inv||0)-1));
+  // Hold-to-repeat ahora vive dentro de cada <FurnitureCard /> con sus propios
+  // hooks. App.jsx solo provee los callbacks (addOne / removeOne / setInv).
 
   const pkC=useMemo(()=>getCounts(placed),[placed]);
   const volL=placed.reduce((s,p)=>s+p.l*p.w*p.h,0);
@@ -484,48 +481,40 @@ export default function App(){
                 </button>
               </div>
             )}
-            {items.map(a=>{const pk=pkC[a.id]||0;
-              return(<div key={a.id} onClick={()=>setSelId(a.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",marginBottom:3,background:selId===a.id?"var(--bg-subtle)":"var(--bg-subtle)",borderRadius:"var(--radius-sm)",cursor:"pointer",border:selId===a.id?`1px solid ${a.color}44`:"1px solid transparent"}}>
-                <div style={{width:4,height:24,borderRadius:3,background:a.color,flexShrink:0}}/>
-                <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:500,color:"var(--text-primary)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.name}</div>
-                  <div style={{fontSize:9,color:"var(--text-tertiary)"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
-                {!editMode&&<span style={{fontSize:11,fontWeight:600,color:a.load===0?"var(--text-tertiary)":pk>=a.load?"var(--success)":"var(--warning)",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
-                {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();invDownHold.start(a.id);}} onMouseUp={invDownHold.stop} onMouseLeave={invDownHold.stop} onTouchStart={e=>{e.stopPropagation();invDownHold.start(a.id);}} onTouchEnd={invDownHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Menos"><Minus size={14}/></button>
-                  <input
-                    type="number" className="tp-qty" value={a.inv} min={0} max={999}
-                    onChange={e=>{const v=e.target.value;setInv(a.id, v===""?0:Math.max(0,Math.min(999,parseInt(v,10)||0)));}}
-                    onClick={e=>e.stopPropagation()}
-                    onFocus={e=>e.target.select()}
-                    style={{fontSize:12,color:"var(--warning)",minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {items.map(a=>{
+                const pk=pkC[a.id]||0;
+                return (
+                  <FurnitureCard
+                    key={a.id}
+                    furniture={a}
+                    placed={pk}
+                    editMode={editMode}
+                    selected={selId===a.id}
+                    onSelect={()=>setSelId(a.id)}
+                    onIncrement={editMode
+                      ?()=>setInv(a.id,(a.inv||0)+1)
+                      :()=>addOne(a.id)}
+                    onDecrement={editMode
+                      ?()=>setInv(a.id,(a.inv||0)-1)
+                      :()=>removeOne(a.id)}
+                    onSetCount={editMode
+                      ?(n)=>setInv(a.id,n)
+                      :(n)=>setLoad(a.id,n)}
+                    onEdit={()=>{setEditingFurniture(a);setShowFurnitureEditor(true);}}
                   />
-                  <button onMouseDown={e=>{e.stopPropagation();invUpHold.start(a.id);}} onMouseUp={invUpHold.stop} onMouseLeave={invUpHold.stop} onTouchStart={e=>{e.stopPropagation();invUpHold.start(a.id);}} onTouchEnd={invUpHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Más"><Plus size={14}/></button>
-                </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();removeHold.start(a.id);}} onMouseUp={removeHold.stop} onMouseLeave={removeHold.stop} onTouchStart={e=>{e.stopPropagation();removeHold.start(a.id);}} onTouchEnd={removeHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Menos"><Minus size={14}/></button>
-                  <input
-                    type="number" className="tp-qty" value={a.load} min={0} max={a.inv}
-                    onChange={e=>{const v=e.target.value;setLoad(a.id, v===""?0:(parseInt(v,10)||0));}}
-                    onClick={e=>e.stopPropagation()}
-                    onFocus={e=>e.target.select()}
-                    style={{fontSize:12,color:"var(--primary)",minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
-                  />
-                  <button onMouseDown={e=>{e.stopPropagation();addHold.start(a.id);}} onMouseUp={addHold.stop} onMouseLeave={addHold.stop} onTouchStart={e=>{e.stopPropagation();addHold.start(a.id);}} onTouchEnd={addHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Más"><Plus size={14}/></button>
-                </div>)}
+                );
+              })}
+              {items.length>0&&(
                 <button
-                  onClick={e=>{e.stopPropagation();setEditingFurniture(a);setShowFurnitureEditor(true);}}
-                  onMouseEnter={e=>{e.currentTarget.style.opacity=1;}}
-                  onMouseLeave={e=>{e.currentTarget.style.opacity=0.5;}}
-                  title="Editar mueble"
-                  style={{background:"transparent",border:"none",cursor:"pointer",fontSize:11,padding:0,opacity:0.5,width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
-                  aria-label="Editar mueble"><Edit2 size={12}/></button>
-              </div>);
-            })}
-            {items.length>0&&(
-              <button onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
-                      style={{marginTop:6,width:"100%",padding:"6px",fontSize:11,color:"var(--primary)",background:"transparent",border:`1px dashed ${alpha('--primary', 27)}`,borderRadius:"var(--radius-sm)",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                <Plus size={14}/>Agregar mueble
-              </button>
-            )}
+                  type="button"
+                  className="add-furniture-btn"
+                  onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
+                >
+                  <Plus size={14}/>Agregar mueble
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{marginTop:10,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,fontSize:10,color:"var(--text-secondary)",lineHeight:1.5}}>

@@ -86,3 +86,79 @@ input, textarea, select {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+/* Furniture card (lista de muebles) */
+.furniture-card {
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+}
+.furniture-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Stepper integrado */
+.stepper-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 120ms ease;
+}
+.stepper-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  color: var(--text-tertiary);
+}
+.stepper-input {
+  -moz-appearance: textfield;
+}
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Icon-only button (edit, close, etc.) */
+.icon-btn {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.icon-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+/* Botón "Agregar mueble" con borde punteado */
+.add-furniture-btn {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.add-furniture-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}

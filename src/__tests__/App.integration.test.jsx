@@ -166,8 +166,12 @@ describe('App: crear mueble custom', () => {
     fireEvent.click(within(modal).getByRole('button', { name: 'Guardar' }));
 
     expect(screen.getByText('Silla X')).toBeInTheDocument();
-    // Inventario "3", load default "0", el row muestra "0/3"
-    expect(screen.getByText('0/3')).toBeInTheDocument();
+    // El stepper muestra el load actual en un input + "/3" en un span aparte
+    // (estructura del componente FurnitureCard). Tras agregar, load === 0.
+    const sillaRow = screen.getByText('Silla X').closest('.furniture-card');
+    expect(sillaRow).not.toBeNull();
+    expect(within(sillaRow).getByText('/3')).toBeInTheDocument();
+    expect(within(sillaRow).getByDisplayValue('0')).toBeInTheDocument();
 
     // Persistido
     const after = loadInventories()[0];
