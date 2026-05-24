@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal.jsx';
 import { alpha } from '../styles/util.js';
+import { Edit2, Trash2, Plus } from 'lucide-react';
 
 // Paleta sugerida (botones rápidos debajo del color picker).
 const PALETTE = [
@@ -118,7 +119,9 @@ export default function FurnitureEditorModal({
   return (
     <Modal
       open={open} onClose={onClose}
-      title={isEdit ? "✏️ Editar mueble" : "➕ Nuevo mueble"}
+      title={isEdit
+        ? <span style={{display:'inline-flex',alignItems:'center',gap:6}}><Edit2 size={16}/>Editar mueble</span>
+        : <span style={{display:'inline-flex',alignItems:'center',gap:6}}><Plus size={16}/>Nuevo mueble</span>}
       titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}
       maxWidth={380}
     >
@@ -198,7 +201,7 @@ export default function FurnitureEditorModal({
         {isEdit && onDelete && (
           <button onClick={handleDelete}
                   style={{ ...baseBtn, color: "var(--error)", borderColor: alpha('--error', 27), fontSize: 10, padding: "6px 10px" }}>
-            🗑️ Borrar mueble
+            <Trash2 size={12} style={{marginRight:4,verticalAlign:'-2px'}}/>Borrar mueble
           </button>
         )}
         <div style={{ flex: 1 }} />

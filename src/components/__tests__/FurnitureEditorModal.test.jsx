@@ -38,7 +38,7 @@ function renderModal(props = {}) {
 describe('FurnitureEditorModal — modo nuevo', () => {
   it('título "➕ Nuevo mueble", campos default, Guardar disabled', () => {
     renderModal();
-    expect(screen.getByText('➕ Nuevo mueble')).toBeInTheDocument();
+    expect(screen.getByText('Nuevo mueble')).toBeInTheDocument();
     const { name, numbers } = getInputs(document.body);
     expect(name.value).toBe('');
     // ancho/alto/fondo = 50, inv = 1
@@ -56,7 +56,7 @@ describe('FurnitureEditorModal — modo nuevo', () => {
 describe('FurnitureEditorModal — modo edición', () => {
   it('título "✏️ Editar mueble", campos pre-cargados, nota tenue, botón Borrar visible', () => {
     renderModal({ initialFurniture: sampleFurn({ name: 'Cama Lux', ancho: 200, alto: 30, fondo: 150, inv: 5, color: '#06B6D4' }) });
-    expect(screen.getByText('✏️ Editar mueble')).toBeInTheDocument();
+    expect(screen.getByText('Editar mueble')).toBeInTheDocument();
     const { name, numbers } = getInputs(document.body);
     expect(name.value).toBe('Cama Lux');
     expect(numbers[0].value).toBe('200');

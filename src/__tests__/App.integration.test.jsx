@@ -58,10 +58,16 @@ import { createInventory, setActiveInventoryId, loadInventories } from '../inven
 
 const BASE_MUEBLES = ['Tocador Boston', 'Buró Hampton', 'Cabecera Hampton', 'Base Queen Sierra'];
 
-// Helper para encontrar el "card" de un modal (el div padre del título).
+// Helper para encontrar el "card" de un modal (sube por el árbol DOM hasta
+// el div del card). Tras la migración a iconos lucide, el título es un
+// <span> con icono + texto, así que subir 2 niveles llega al card.
 function modalCardByTitle(titleText) {
   const titleEl = screen.getByText(titleText);
-  return titleEl.parentElement;
+  // titleEl puede ser el span (con icono) o el title div directamente.
+  // Subimos hasta encontrar el card (el div con maxWidth en su style).
+  let el = titleEl;
+  while (el && !(el.style && el.style.maxWidth)) el = el.parentElement;
+  return el || titleEl.parentElement;
 }
 
 beforeEach(() => {
@@ -107,7 +113,7 @@ describe('App: flujo de inventario vacío', () => {
     vi.spyOn(window, 'prompt').mockReturnValue('Test');
     render(<App />);
 
-    fireEvent.click(screen.getByText(/🗂️ Inventarios/));
+    fireEvent.click(screen.getByText(/Inventarios/));
     fireEvent.click(screen.getByText(/Crear inventario nuevo/));
 
     // Tras crear y activar, ya no hay muebles base
@@ -124,12 +130,12 @@ describe('App: flujo de inventario vacío', () => {
     vi.spyOn(window, 'prompt').mockReturnValue('Test');
     render(<App />);
     // Crear vacío Test (queda activo)
-    fireEvent.click(screen.getByText(/🗂️ Inventarios/));
+    fireEvent.click(screen.getByText(/Inventarios/));
     fireEvent.click(screen.getByText(/Crear inventario nuevo/));
     expect(screen.queryByText('Buró Hampton')).toBeNull();
 
     // Abrir manager y cargar el Inventario base
-    fireEvent.click(screen.getByText(/🗂️ Inventarios/));
+    fireEvent.click(screen.getByText(/Inventarios/));
     const cargarButtons = screen.getAllByRole('button', { name: 'Cargar' });
     const baseCargar = cargarButtons.find(b => !b.disabled);
     fireEvent.click(baseCargar);
@@ -145,9 +151,9 @@ describe('App: crear mueble custom', () => {
   it('agrega "Silla X" desde el editor y aparece en la lista', () => {
     render(<App />);
 
-    fireEvent.click(screen.getByText('➕ Agregar mueble'));
+    fireEvent.click(screen.getByText(/Agregar mueble/));
 
-    const modal = modalCardByTitle('➕ Nuevo mueble');
+    const modal = modalCardByTitle('Nuevo mueble');
     const nameInput = within(modal).getByPlaceholderText('Ej. Silla de comedor');
     const numberInputs = modal.querySelectorAll('input[type="number"]');
 
@@ -189,7 +195,7 @@ describe('App: editar y borrar mueble custom', () => {
     const editBtn = within(sillaRow).getByTitle('Editar mueble');
     fireEvent.click(editBtn);
 
-    const modal = modalCardByTitle('✏️ Editar mueble');
+    const modal = modalCardByTitle('Editar mueble');
     const nameInput = within(modal).getByPlaceholderText('Ej. Silla de comedor');
     expect(nameInput.value).toBe('Silla X');
     fireEvent.change(nameInput, { target: { value: 'Silla Y' } });
@@ -206,7 +212,7 @@ describe('App: editar y borrar mueble custom', () => {
     const sillaRow = screen.getByText('Silla X').closest('div').parentElement.parentElement;
     fireEvent.click(within(sillaRow).getByTitle('Editar mueble'));
 
-    const modal = modalCardByTitle('✏️ Editar mueble');
+    const modal = modalCardByTitle('Editar mueble');
     fireEvent.click(within(modal).getByText(/Borrar mueble/));
 
     expect(window.confirm).toHaveBeenCalled();
@@ -222,7 +228,7 @@ describe('App: editar y borrar mueble custom', () => {
     const sillaRow = screen.getByText('Silla X').closest('div').parentElement.parentElement;
     fireEvent.click(within(sillaRow).getByTitle('Editar mueble'));
 
-    const modal = modalCardByTitle('✏️ Editar mueble');
+    const modal = modalCardByTitle('Editar mueble');
     fireEvent.click(within(modal).getByText(/Borrar mueble/));
 
     expect(window.confirm).toHaveBeenCalled();

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
 import { alpha } from '../styles/util.js';
+import { FolderOpen, Edit2, Trash2, Plus, Save } from 'lucide-react';
 import {
   loadInventories,
   setActiveInventoryId as persistActiveId,
@@ -106,7 +107,7 @@ export default function InventoryManagerModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="🗂️ Mis inventarios"
+      title={<span style={{display:'inline-flex',alignItems:'center',gap:6}}><FolderOpen size={16}/>Mis inventarios</span>}
       titleColor={"var(--primary)"}
       accentColor={alpha('--primary', 27)}
       maxWidth={420}
@@ -140,14 +141,14 @@ export default function InventoryManagerModal({
                 >
                   Cargar
                 </button>
-                <button onClick={() => handleRename(inv.id)} title="Renombrar" style={{ ...btn, color: "var(--text-secondary)" }}>✏️</button>
+                <button onClick={() => handleRename(inv.id)} title="Renombrar" aria-label="Renombrar" style={{ ...btn, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center" }}><Edit2 size={12}/></button>
                 <button
                   onClick={() => handleDelete(inv.id)}
                   disabled={inventories.length <= 1}
                   title={inventories.length <= 1 ? "No puedes borrar el único" : "Borrar"}
                   style={{ ...btn, color: "var(--error)", opacity: inventories.length <= 1 ? 0.3 : 1, cursor: inventories.length <= 1 ? "default" : "pointer" }}
                 >
-                  🗑️
+                  <Trash2 size={12}/>
                 </button>
               </div>
             </div>
@@ -157,13 +158,13 @@ export default function InventoryManagerModal({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <button onClick={handleCreateEmpty} style={{ ...btnFull, color: "var(--success)", borderColor: alpha('--success', 27) }}>
-          ➕ Crear inventario nuevo (vacío)
+          <Plus size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Crear inventario nuevo (vacío)
         </button>
         <div style={{ fontSize: 10, color: "var(--text-secondary)", padding: "0 4px", marginTop: -2, lineHeight: 1.4 }}>
           Arranca sin muebles; los agregas después en el Paso 3.
         </div>
         <button onClick={handleSaveAsNew} style={{ ...btnFull, color: "var(--primary)", borderColor: alpha('--primary', 27) }}>
-          💾 Guardar inventario actual como nuevo
+          <Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Guardar inventario actual como nuevo
         </button>
         <button
           onClick={handleOverwriteActive}
@@ -174,7 +175,7 @@ export default function InventoryManagerModal({
             borderColor: savedFlash ? alpha('--success', 27) : alpha('--warning', 27),
           }}
         >
-          {savedFlash ? "✓ Guardado" : "💾 Sobrescribir activo"}
+          {savedFlash ? <>✓ Guardado</> : <><Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Sobrescribir activo</>}
         </button>
       </div>
 

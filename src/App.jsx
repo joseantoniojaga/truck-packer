@@ -11,6 +11,14 @@ import Viewer3D from './components/Viewer3D.jsx';
 import OV from './components/OrthoView.jsx';
 import { useHoldRepeat } from './hooks/useHoldRepeat.js';
 import { alpha } from './styles/util.js';
+import { Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Minus, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+
+// Helper para títulos de modales con icono inline.
+const iconTitle = (Icon, text) => (
+  <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
+    <Icon size={16} />{text}
+  </span>
+);
 import {
   loadInventories,
   getActiveInventoryId,
@@ -289,7 +297,7 @@ export default function App(){
       </Modal>
 
       {/* STRATEGY CONFIRM */}
-      <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title="🧠 Aplicar estrategia" titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
+      <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title={iconTitle(Sparkles, "Aplicar estrategia")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
         <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
@@ -298,7 +306,7 @@ export default function App(){
       </Modal>
 
       {/* REORGANIZE ADD CONFIRM */}
-      <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title="🔄 Reorganizar carga" titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
+      <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title={iconTitle(RotateCcw, "Reorganizar carga")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
         {pendingAdd&&(<>
           <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"var(--primary)"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
           <div style={{display:"flex",gap:8}}>
@@ -312,7 +320,7 @@ export default function App(){
       <Modal
         open={!!swapOptions}
         onClose={()=>setSwapOptions(null)}
-        title={swapOptions?(swapOptions.options.length===0?"❌ Sin opciones":"🔄 Elige qué quitar"):""}
+        title={swapOptions?(swapOptions.options.length===0?iconTitle(X,"Sin opciones"):iconTitle(RotateCcw,"Elige qué quitar")):""}
         titleColor={swapOptions&&swapOptions.options.length===0?"var(--error)":"var(--primary)"}
         accentColor={alpha('--primary', 27)}
         maxWidth={360}
@@ -344,7 +352,7 @@ export default function App(){
       </Modal>
 
       {/* REORG CONFIRM */}
-      <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title="🔄 Reorganizar carga" titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}>
+      <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title={iconTitle(RotateCcw, "Reorganizar carga")} titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}>
         <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
@@ -379,7 +387,7 @@ export default function App(){
       {/* ── HEADER (ancho completo) ── */}
       <div className="tp-header">
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-          <span style={{fontSize:20}}>🚛</span>
+          <Truck size={20} />
           <h1 style={{margin:0,fontSize:17,fontWeight:700,color:"var(--text-primary)"}}>Calculadora de Carga</h1>
         </div>
         <p style={{margin:0,fontSize:10,color:"var(--text-tertiary)"}}>Tráiler 16.15m × 2.47m × 2.80m · {TR.placas} · {fmtV(TV)}</p>
@@ -393,7 +401,7 @@ export default function App(){
 
           <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,marginBottom:10}}>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:5}}>
-              <span style={{color:"var(--text-secondary)"}}>📦 {placed.length} colocadas / {tLoad} pedidas</span>
+              <span style={{color:"var(--text-secondary)",display:"inline-flex",alignItems:"center",gap:6}}><Package size={14}/>{placed.length} colocadas / {tLoad} pedidas</span>
               <span style={{fontWeight:600,color:util>85?"var(--error)":util>60?"var(--warning)":"var(--success)"}}>{util.toFixed(1)}%</span>
             </div>
             <div style={{background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",height:18,overflow:"hidden"}}>
@@ -403,21 +411,21 @@ export default function App(){
           </div>
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="free"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="free"?"var(--primary)":"var(--border)"}}>📦 Libre</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="free"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="free"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Box size={14}/>Libre</button>
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="backToFront"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="backToFront"?"var(--primary)":"var(--border)"}}>🧱 Fondo→Frente</button>
           </div>
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
             <button onClick={()=>{if(placed.length>0)setShowReorgConfirm(true);}} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"var(--primary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:alpha('--primary', 27),opacity:(computing||placed.length===0)?0.5:1}}>
-              🔄 Reorganizar
+              <RotateCcw size={14}/>Reorganizar
             </button>
             <button onClick={startSim} disabled={computing||placed.length===0} style={{...B,flex:1,padding:"8px",fontSize:12,color:"var(--secondary)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:alpha('--secondary', 27),opacity:(computing||placed.length===0)?0.5:1}}>
-              ▶ Simular
+              <Play size={14}/>Simular
             </button>
           </div>
 
           <button onClick={()=>setSS(!showStrats)} disabled={computing} style={{...B,width:"100%",padding:"8px",marginBottom:8,fontSize:12,color:"var(--warning)",display:"flex",alignItems:"center",justifyContent:"center",gap:6,borderColor:showStrats?alpha('--warning', 27):"var(--border)",opacity:computing?0.5:1}}>
-            {computing?"⏳ Calculando...":"🧠 Estrategias"} {!computing&&(showStrats?"▲":"▼")}
+            {computing?"⏳ Calculando...":<span style={{display:"inline-flex",alignItems:"center",gap:6}}><Sparkles size={14}/>Estrategias</span>} {!computing&&(showStrats?<ChevronUp size={14}/>:<ChevronDown size={14}/>)}
           </button>
           {showStrats&&(
             <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,marginBottom:10,border:`1px solid ${alpha('--warning', 13)}`}}>
@@ -432,7 +440,7 @@ export default function App(){
           {sel&&(<div style={{background:`${sel.color}12`,border:`1px solid ${sel.color}33`,borderRadius:"var(--radius-md)",padding:10,marginBottom:10}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,fontWeight:700,color:sel.color}}>{sel.name}</span>
-              <button onClick={()=>setSelId(null)} style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",fontSize:14}}>✕</button>
+              <button onClick={()=>setSelId(null)} aria-label="Cerrar" style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",display:"inline-flex",alignItems:"center"}}><X size={16}/></button>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:6,fontSize:10,color:"var(--text-secondary)"}}>
               <span>Medidas: <b style={{color:"var(--text-primary)"}}>{sel.ancho}×{sel.alto}×{sel.fondo}cm</b></span>
@@ -447,8 +455,8 @@ export default function App(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>Muebles</span>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>setShowInventoryManager(true)} style={{...B,padding:"3px 7px",fontSize:10,color:"var(--primary)"}}>🗂️ Inventarios</button>
-                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?"var(--warning)":"var(--text-secondary)"}}>{editMode?"✓ Listo":"✏️ Inventario"}</button>
+                <button onClick={()=>setShowInventoryManager(true)} style={{...B,padding:"3px 7px",fontSize:10,color:"var(--primary)",display:"inline-flex",alignItems:"center",gap:4}}><FolderOpen size={12}/>Inventarios</button>
+                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?"var(--warning)":"var(--text-secondary)",display:"inline-flex",alignItems:"center",gap:4}}>{editMode?<>✓ Listo</>:<><Edit2 size={12}/>Inventario</>}</button>
                 <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:"var(--error)"}}>Todos a 0</button>
               </div>
             </div>
@@ -460,8 +468,8 @@ export default function App(){
               <div style={{textAlign:"center",padding:"30px 10px",color:"var(--text-secondary)",fontSize:12,lineHeight:1.5}}>
                 <p style={{margin:"0 0 12px"}}>Este inventario está vacío.<br/>Agrega tu primer mueble.</p>
                 <button onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
-                        style={{...B,padding:"10px 18px",fontSize:12,color:"var(--primary)",borderColor:alpha('--primary', 27)}}>
-                  ➕ Agregar mueble
+                        style={{...B,padding:"10px 18px",fontSize:12,color:"var(--primary)",borderColor:alpha('--primary', 27),display:"inline-flex",alignItems:"center",gap:6}}>
+                  <Plus size={14}/>Agregar mueble
                 </button>
               </div>
             )}
@@ -472,7 +480,7 @@ export default function App(){
                   <div style={{fontSize:9,color:"var(--text-tertiary)"}}>{a.ancho}×{a.alto}×{a.fondo}cm</div></div>
                 {!editMode&&<span style={{fontSize:11,fontWeight:600,color:a.load===0?"var(--text-tertiary)":pk>=a.load?"var(--success)":"var(--warning)",minWidth:38,textAlign:"right"}}>{pk}/{a.inv}</span>}
                 {editMode?(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();invDownHold.start(a.id);}} onMouseUp={invDownHold.stop} onMouseLeave={invDownHold.stop} onTouchStart={e=>{e.stopPropagation();invDownHold.start(a.id);}} onTouchEnd={invDownHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();invDownHold.start(a.id);}} onMouseUp={invDownHold.stop} onMouseLeave={invDownHold.stop} onTouchStart={e=>{e.stopPropagation();invDownHold.start(a.id);}} onTouchEnd={invDownHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Menos"><Minus size={14}/></button>
                   <input
                     type="number" className="tp-qty" value={a.inv} min={0} max={999}
                     onChange={e=>{const v=e.target.value;setInv(a.id, v===""?0:Math.max(0,Math.min(999,parseInt(v,10)||0)));}}
@@ -480,9 +488,9 @@ export default function App(){
                     onFocus={e=>e.target.select()}
                     style={{fontSize:12,color:"var(--warning)",minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
                   />
-                  <button onMouseDown={e=>{e.stopPropagation();invUpHold.start(a.id);}} onMouseUp={invUpHold.stop} onMouseLeave={invUpHold.stop} onTouchStart={e=>{e.stopPropagation();invUpHold.start(a.id);}} onTouchEnd={invUpHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();invUpHold.start(a.id);}} onMouseUp={invUpHold.stop} onMouseLeave={invUpHold.stop} onTouchStart={e=>{e.stopPropagation();invUpHold.start(a.id);}} onTouchEnd={invUpHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Más"><Plus size={14}/></button>
                 </div>):(<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  <button onMouseDown={e=>{e.stopPropagation();removeHold.start(a.id);}} onMouseUp={removeHold.stop} onMouseLeave={removeHold.stop} onTouchStart={e=>{e.stopPropagation();removeHold.start(a.id);}} onTouchEnd={removeHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>−</button>
+                  <button onMouseDown={e=>{e.stopPropagation();removeHold.start(a.id);}} onMouseUp={removeHold.stop} onMouseLeave={removeHold.stop} onTouchStart={e=>{e.stopPropagation();removeHold.start(a.id);}} onTouchEnd={removeHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Menos"><Minus size={14}/></button>
                   <input
                     type="number" className="tp-qty" value={a.load} min={0} max={a.inv}
                     onChange={e=>{const v=e.target.value;setLoad(a.id, v===""?0:(parseInt(v,10)||0));}}
@@ -490,7 +498,7 @@ export default function App(){
                     onFocus={e=>e.target.select()}
                     style={{fontSize:12,color:"var(--primary)",minWidth:24,width:36,textAlign:"center",border:"none",background:"transparent",outline:"none",padding:0}}
                   />
-                  <button onMouseDown={e=>{e.stopPropagation();addHold.start(a.id);}} onMouseUp={addHold.stop} onMouseLeave={addHold.stop} onTouchStart={e=>{e.stopPropagation();addHold.start(a.id);}} onTouchEnd={addHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>+</button>
+                  <button onMouseDown={e=>{e.stopPropagation();addHold.start(a.id);}} onMouseUp={addHold.stop} onMouseLeave={addHold.stop} onTouchStart={e=>{e.stopPropagation();addHold.start(a.id);}} onTouchEnd={addHold.stop} style={{...B,width:22,height:22,borderRadius:"var(--radius-sm)",color:"var(--text-secondary)",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",padding:0}} aria-label="Más"><Plus size={14}/></button>
                 </div>)}
                 <button
                   onClick={e=>{e.stopPropagation();setEditingFurniture(a);setShowFurnitureEditor(true);}}
@@ -498,13 +506,13 @@ export default function App(){
                   onMouseLeave={e=>{e.currentTarget.style.opacity=0.5;}}
                   title="Editar mueble"
                   style={{background:"transparent",border:"none",cursor:"pointer",fontSize:11,padding:0,opacity:0.5,width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}
-                >✏️</button>
+                  aria-label="Editar mueble"><Edit2 size={12}/></button>
               </div>);
             })}
             {items.length>0&&(
               <button onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
-                      style={{marginTop:6,width:"100%",padding:"6px",fontSize:11,color:"var(--primary)",background:"transparent",border:`1px dashed ${alpha('--primary', 27)}`,borderRadius:"var(--radius-sm)",cursor:"pointer",fontWeight:600}}>
-                ➕ Agregar mueble
+                      style={{marginTop:6,width:"100%",padding:"6px",fontSize:11,color:"var(--primary)",background:"transparent",border:`1px dashed ${alpha('--primary', 27)}`,borderRadius:"var(--radius-sm)",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <Plus size={14}/>Agregar mueble
               </button>
             )}
           </div>
@@ -529,7 +537,7 @@ export default function App(){
               <div style={{marginTop:8,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,border:`1px solid ${alpha('--secondary', 27)}`,flexShrink:0}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                   <span style={{fontSize:11,fontWeight:600,color:"var(--secondary)"}}>Simulador de carga</span>
-                  <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"var(--error)",borderColor:alpha('--error', 27)}}>✕ Salir</button>
+                  <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"var(--error)",borderColor:alpha('--error', 27),display:"inline-flex",alignItems:"center",gap:4}}><X size={12}/>Salir</button>
                 </div>
                 <div style={{background:"var(--surface)",borderRadius:"var(--radius-sm)",height:6,marginBottom:8,overflow:"hidden"}}>
                   <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,var(--secondary),var(--primary))`,borderRadius:"var(--radius-sm)",transition:"width 0.3s"}}/>
@@ -539,13 +547,13 @@ export default function App(){
                     <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
                   </div>
                 )}
-                {simStep===0&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:8}}>Presiona ▶ para avanzar paso a paso</div>}
+                {simStep===0&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>Presiona <Play size={12} style={{display:"inline-block"}}/> para avanzar paso a paso</div>}
                 {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:"var(--success)",marginBottom:8}}>✓ Carga completa ({simSequence.length} muebles)</div>}
                 <div style={{display:"flex",gap:4,justifyContent:"center"}}>
                   <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)"}} title="Primer paso">⏮</button>
                   <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)"}} title="Anterior">◀</button>
-                  <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27)}}>{simPlaying?"⏸ Pausar":"▶ Auto"}</button>
-                  <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)"}} title="Siguiente">▶</button>
+                  <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27),display:"inline-flex",alignItems:"center",gap:6}}>{simPlaying?<>⏸ Pausar</>:<><Play size={14}/>Auto</>}</button>
+                  <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Siguiente" aria-label="Siguiente"><Play size={14}/></button>
                   <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)"}} title="Último paso">⏭</button>
                 </div>
               </div>
