@@ -17,7 +17,7 @@ import CapacityCard from './components/CapacityCard.jsx';
 import ActionBar from './components/ActionBar.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import {
-  Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Edit2,
+  Truck, Box, Package, RotateCcw, Play, Sparkles, X, Plus, Edit2,
   AlertTriangle, Check, Lightbulb,
   ArrowLeftRight, SkipBack, Rewind, Pause, SkipForward, Layers,
 } from 'lucide-react';
@@ -263,13 +263,13 @@ export default function App(){
   const runStrat=(k)=>{setRunningStrategyId(k);setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setComp(false);setRunningStrategyId(null);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
 
-  const B={borderRadius:"var(--radius-sm)",border:`1px solid var(--border)`,background:"var(--bg-subtle)",cursor:"pointer",fontWeight:600};
+  const B={borderRadius:"var(--radius-md)",border:`1px solid var(--border)`,background:"var(--bg-subtle)",cursor:"pointer",fontWeight:600};
 
   return(
     <div className="tp-root" style={{background:"var(--bg-base)",color:"var(--text-primary)",position:"relative"}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
       <style>{`
-        .tp-root{height:100vh;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;}
+        .tp-root{height:100vh;padding:8px 16px 16px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;}
         .tp-header{flex-shrink:0;margin-bottom:10px;}
         .tp-cols{display:flex;gap:12px;flex:1;min-height:0;overflow:hidden;}
         .tp-left{width:35%;overflow-y:auto;flex-shrink:0;}
@@ -420,6 +420,7 @@ export default function App(){
         capacityText={fmtV(TV)}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenInventories={()=>setShowInventoryManager(true)}
       />
 
       {/* ── DOS COLUMNAS ── */}
@@ -437,7 +438,6 @@ export default function App(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>Muebles</span>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>setShowInventoryManager(true)} style={{...B,padding:"3px 7px",fontSize:10,color:"var(--primary)",display:"inline-flex",alignItems:"center",gap:4}}><FolderOpen size={12}/>Inventarios</button>
                 <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?"var(--warning)":"var(--text-secondary)",display:"inline-flex",alignItems:"center",gap:4}}>{editMode?<><Check size={12}/>Listo</>:<><Edit2 size={12}/>Inventario</>}</button>
                 <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:"var(--error)"}}>Todos a 0</button>
               </div>
@@ -550,7 +550,7 @@ export default function App(){
             />
 
             {/* Contenido del visor */}
-            <div className="viewer-content" style={{padding:viewMode==="all"?16:0,overflowY:viewMode==="all"?"auto":"hidden"}}>
+            <div className="viewer-content" style={{padding:viewMode==="all"?"120px 16px 16px":(viewMode!=="3d"?"120px 0 0":0),overflowY:viewMode==="all"?"auto":"hidden"}}>
               {tLoad===0 ? (
                 <div style={{textAlign:"center",color:"var(--text-tertiary)",fontSize:13,padding:"40px"}}>
                   Usa + o una estrategia
@@ -566,7 +566,7 @@ export default function App(){
                   ))}
                 </div>
               ) : (
-                <div style={{width:"100%",padding:24,paddingTop:80}}>
+                <div style={{width:"100%",padding:"0 24px 24px"}}>
                   <OV placed={placed} vk={viewMode} selId={selId} onSel={setSelId} trailer={TR}/>
                 </div>
               )}

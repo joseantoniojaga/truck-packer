@@ -147,43 +147,62 @@ export default function InventoryManagerModal({
       accentColor={alpha('--primary', 27)}
       maxWidth={420}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, maxHeight: 280, overflowY: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 320, overflowY: "auto" }}>
         {inventories.map(inv => {
           const isActive = inv.id === activeInventoryId;
+          const totalUnits = inv.items.reduce((s, it) => s + (it.inv || 0), 0);
           return (
             <div
               key={inv.id}
+              onClick={!isActive ? () => handleLoad(inv.id) : undefined}
+              className={isActive ? undefined : "inv-card"}
               style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: "var(--radius-sm)",
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "12px 14px",
+                background: isActive ? alpha('--success', 13) : "var(--surface)",
+                borderRadius: "var(--radius-md)",
                 border: `1px solid ${isActive ? alpha('--success', 27) : 'var(--border)'}`,
+                cursor: isActive ? "default" : "pointer",
+                transition: "background-color 150ms ease, box-shadow 150ms ease",
               }}
             >
+              {isActive && (
+                <Check size={16} style={{ color: "var(--success)", flexShrink: 0 }} aria-label="Activo" />
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-                  {isActive && <Check size={14} style={{ color: "var(--success)" }} aria-label="Activo" />}
-                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inv.name}</span>
+                <div style={{
+                  fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>
+                  {inv.name}
                 </div>
-                <div style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 2 }}>
-                  {inv.items.length} {inv.items.length === 1 ? "tipo de mueble" : "tipos de muebles"}
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2, fontFeatureSettings: "'tnum'" }}>
+                  {inv.items.length} {inv.items.length === 1 ? "tipo" : "tipos"} · {totalUnits} {totalUnits === 1 ? "mueble" : "muebles"}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                {!isActive && (
+                  <button
+                    onClick={() => handleLoad(inv.id)}
+                    style={{ ...btn, color: "var(--primary)" }}
+                  >
+                    Cargar
+                  </button>
+                )}
                 <button
-                  onClick={() => handleLoad(inv.id)}
-                  disabled={isActive}
-                  style={{ ...btn, color: isActive ? "var(--text-secondary)" : "var(--primary)", opacity: isActive ? 0.4 : 1, cursor: isActive ? "default" : "pointer" }}
+                  onClick={() => setPromptState({ kind: 'rename', invId: inv.id })}
+                  title="Renombrar" aria-label="Renombrar"
+                  style={{ ...btn, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center" }}
                 >
-                  Cargar
+                  <Edit2 size={14}/>
                 </button>
-                <button onClick={() => setPromptState({ kind: 'rename', invId: inv.id })} title="Renombrar" aria-label="Renombrar" style={{ ...btn, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center" }}><Edit2 size={12}/></button>
                 <button
                   onClick={() => setConfirmDeleteInv(inv)}
                   disabled={inventories.length <= 1}
                   title={inventories.length <= 1 ? "No puedes borrar el único" : "Borrar"}
-                  style={{ ...btn, color: "var(--error)", opacity: inventories.length <= 1 ? 0.3 : 1, cursor: inventories.length <= 1 ? "default" : "pointer" }}
+                  style={{ ...btn, color: "var(--error)", opacity: inventories.length <= 1 ? 0.3 : 1, cursor: inventories.length <= 1 ? "default" : "pointer", display: "inline-flex", alignItems: "center" }}
                 >
-                  <Trash2 size={12}/>
+                  <Trash2 size={14}/>
                 </button>
               </div>
             </div>
@@ -191,34 +210,36 @@ export default function InventoryManagerModal({
         })}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <button onClick={() => setPromptState({ kind: 'createEmpty' })} style={{ ...btnFull, color: "var(--success)", borderColor: alpha('--success', 27) }}>
-          <Plus size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Crear inventario nuevo (vacío)
+      {/* Footer: acciones globales en fila, separadas por border-top */}
+      <div style={{
+        display: "flex", gap: 6, paddingTop: 12,
+        borderTop: "1px solid var(--border)",
+      }}>
+        <button
+          onClick={() => setPromptState({ kind: 'createEmpty' })}
+          className="inv-footer-btn"
+          style={{ color: "var(--success)" }}
+        >
+          <Plus size={14}/>Crear vacío
         </button>
-        <div style={{ fontSize: 10, color: "var(--text-secondary)", padding: "0 4px", marginTop: -2, lineHeight: 1.4 }}>
-          Arranca sin muebles; los agregas después en el Paso 3.
-        </div>
-        <button onClick={() => setPromptState({ kind: 'saveAsNew' })} style={{ ...btnFull, color: "var(--primary)", borderColor: alpha('--primary', 27) }}>
-          <Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Guardar inventario actual como nuevo
+        <button
+          onClick={() => setPromptState({ kind: 'saveAsNew' })}
+          className="inv-footer-btn"
+          style={{ color: "var(--primary)" }}
+        >
+          <Save size={14}/>Guardar actual
         </button>
         <button
           onClick={handleOverwriteActive}
           disabled={!activeInventoryId}
-          style={{
-            ...btnFull,
-            color: savedFlash ? "var(--success)" : "var(--warning)",
-            borderColor: savedFlash ? alpha('--success', 27) : alpha('--warning', 27),
-          }}
+          className="inv-footer-btn"
+          style={{ color: savedFlash ? "var(--success)" : "var(--warning)" }}
         >
           {savedFlash
-            ? <><Check size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Guardado</>
-            : <><Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Sobrescribir activo</>}
+            ? <><Check size={14}/>Guardado</>
+            : <><Save size={14}/>Sobrescribir activo</>}
         </button>
       </div>
-
-      <button onClick={onClose} style={{ ...btnFull, color: "var(--text-secondary)", marginTop: 10 }}>
-        Cerrar
-      </button>
 
       {/* Sub-modal: PromptModal (crear vacío / snapshot / renombrar) */}
       {promptConfig && (

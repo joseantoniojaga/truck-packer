@@ -106,7 +106,7 @@ function OV({ placed, vk: viewKind, selId, onSel, trailer: TR }) {
         width: "100%",
         paddingBottom: `${aspectRatios[viewKind]}%`,
         background: "var(--bg-subtle)",
-        borderRadius: 4,
+        borderRadius: "var(--radius-sm)",
         border: `1px solid ${COLORS.card}`,
         overflow: "hidden",
       }}>
@@ -125,7 +125,7 @@ function OV({ placed, vk: viewKind, selId, onSel, trailer: TR }) {
                 width: `${coords.w}%`,
                 height: `${coords.h}%`,
                 background: placedItem.color,
-                border: `1px solid ${placedItem.color}`,
+                border: `1.5px solid var(--ortho-edge)`,
                 borderRadius: 1,
                 cursor: "pointer",
                 opacity: isSelected ? 1 : 0.85,

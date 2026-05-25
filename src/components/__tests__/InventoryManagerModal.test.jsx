@@ -25,22 +25,22 @@ function mountModal(initial = {}) {
 }
 
 describe('InventoryManagerModal — render', () => {
-  it('un solo inventario activo: muestra check verde, Cargar disabled, Renombrar/Borrar visibles', () => {
+  it('un solo inventario activo: muestra check verde, sin botón Cargar, Renombrar visible', () => {
     const inv = { id: 'a', name: 'Solo', items: [sampleItem()] };
     mountModal({ inventories: [inv], activeInventoryId: 'a' });
 
     expect(screen.getByText('Solo')).toBeInTheDocument();
-    // El inventario activo muestra un icono Check con aria-label "Activo"
     expect(screen.getByLabelText('Activo')).toBeInTheDocument();
-    expect(screen.getByText('1 tipo de mueble')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cargar' })).toBeDisabled();
-    // Renombrar (✏️) y Borrar (🗑️) están presentes pero Borrar disabled (único)
+    // Nuevo subtítulo: "N tipos · M muebles"
+    expect(screen.getByText(/1 tipo · 1 mueble/)).toBeInTheDocument();
+    // El activo NO muestra botón Cargar (ya está cargado)
+    expect(screen.queryByRole('button', { name: 'Cargar' })).toBeNull();
     expect(screen.getByTitle('Renombrar')).toBeInTheDocument();
     const delBtn = screen.getByTitle(/No puedes borrar/);
     expect(delBtn).toBeDisabled();
   });
 
-  it('múltiples inventarios: el activo tiene check, los demás tienen Cargar habilitado', () => {
+  it('múltiples inventarios: el activo tiene check (sin Cargar), los demás muestran botón Cargar', () => {
     const invs = [
       { id: 'a', name: 'Base', items: [sampleItem()] },
       { id: 'b', name: 'Otro', items: [sampleItem(), sampleItem({ id: 2 })] },
@@ -49,11 +49,11 @@ describe('InventoryManagerModal — render', () => {
 
     expect(screen.getByText('Base')).toBeInTheDocument();
     expect(screen.getByText('Otro')).toBeInTheDocument();
-    expect(screen.getByText('2 tipos de muebles')).toBeInTheDocument();
+    expect(screen.getByText(/2 tipos · 2 muebles/)).toBeInTheDocument();
+    // Solo el no-activo tiene botón Cargar
     const cargarButtons = screen.getAllByRole('button', { name: 'Cargar' });
-    // Uno disabled (el activo), el otro habilitado
-    expect(cargarButtons.some(b => b.disabled)).toBe(true);
-    expect(cargarButtons.some(b => !b.disabled)).toBe(true);
+    expect(cargarButtons).toHaveLength(1);
+    expect(cargarButtons[0]).not.toBeDisabled();
   });
 });
 
@@ -152,7 +152,7 @@ describe('InventoryManagerModal — acciones', () => {
     setActiveInventoryId('a');
     const { props } = mountModal({ inventories: invs, activeInventoryId: 'a' });
 
-    fireEvent.click(screen.getByText(/Crear inventario nuevo/));
+    fireEvent.click(screen.getByText(/Crear vacío/));
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
@@ -176,7 +176,7 @@ describe('InventoryManagerModal — acciones', () => {
       inventories: invs, activeInventoryId: 'a', items: currentItems,
     });
 
-    fireEvent.click(screen.getByText(/Guardar inventario actual como nuevo/));
+    fireEvent.click(screen.getByText(/Guardar actual/));
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Snapshot 1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));

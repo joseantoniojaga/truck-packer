@@ -1,4 +1,4 @@
-import { Truck, Sun, Moon } from 'lucide-react';
+import { Truck, Sun, Moon, FolderOpen } from 'lucide-react';
 
 // Topbar Cargo Trust: logo + nombre del producto + info del inventario,
 // pill de capacidad y toggle de tema. Sticky en la parte superior.
@@ -9,12 +9,12 @@ import { Truck, Sun, Moon } from 'lucide-react';
 //   capacityText:  string  — volumen total ya formateado (e.g. "111.74 m³")
 //   theme:         'light' | 'dark'
 //   onToggleTheme: () => void
-export default function Topbar({ inventoryName, trailerPlate, capacityText, theme, onToggleTheme }) {
+export default function Topbar({ inventoryName, trailerPlate, capacityText, theme, onToggleTheme, onOpenInventories }) {
   return (
     <header
       style={{
         position: "sticky",
-        top: 12,
+        top: 8,
         zIndex: 50,
         background: "var(--surface)",
         border: "1px solid var(--border)",
@@ -92,6 +92,30 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
             {capacityText}
           </span>
         </div>
+
+        <button
+          onClick={onOpenInventories}
+          aria-label="Mis inventarios"
+          title="Mis inventarios"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "var(--bg-subtle)",
+            border: "1px solid var(--border)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            padding: 0,
+            transition: "background-color 150ms ease",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--surface-hover)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-subtle)"; }}
+        >
+          <FolderOpen size={16} />
+        </button>
 
         <button
           onClick={onToggleTheme}

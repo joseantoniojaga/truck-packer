@@ -17,24 +17,24 @@ export default function CapacityCard({
         position: "absolute",
         top: 16,
         right: 16,
-        zIndex: 10,
-        width: 340,
+        zIndex: 30,
+        width: 280,
         background: "var(--surface)",
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-lg)",
-        padding: "16px 20px",
+        padding: "12px 16px",
         boxShadow: "var(--shadow-md)",
       }}
     >
       {/* Label */}
       <div
         style={{
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.5px",
           color: "var(--text-tertiary)",
           textTransform: "uppercase",
-          marginBottom: 12,
+          marginBottom: 8,
         }}
       >
         Capacidad del tráiler
@@ -51,7 +51,7 @@ export default function CapacityCard({
       >
         <span
           style={{
-            fontSize: 32,
+            fontSize: 26,
             fontWeight: 700,
             color: "var(--text-primary)",
             fontFeatureSettings: "'tnum'",
@@ -62,7 +62,7 @@ export default function CapacityCard({
         </span>
         <span
           style={{
-            fontSize: 14,
+            fontSize: 12,
             color: "var(--text-secondary)",
             fontFeatureSettings: "'tnum'",
             whiteSpace: "nowrap",
@@ -78,8 +78,8 @@ export default function CapacityCard({
       {/* Línea pequeña con conteo de muebles */}
       {typeof placedCount === "number" && typeof totalRequested === "number" && totalRequested > 0 && (
         <div style={{
-          marginTop: 8,
-          fontSize: 11,
+          marginTop: 6,
+          fontSize: 10,
           color: "var(--text-tertiary)",
           fontWeight: 500,
           fontFeatureSettings: "'tnum'",
@@ -91,8 +91,8 @@ export default function CapacityCard({
       {/* Barra de progreso con gradiente azul → cyan → amarillo → rojo */}
       <div
         style={{
-          marginTop: 12,
-          height: 8,
+          marginTop: 10,
+          height: 6,
           background: "var(--bg-subtle)",
           borderRadius: 999,
           overflow: "hidden",

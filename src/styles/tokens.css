@@ -23,6 +23,10 @@
   --shadow-sm: 0 2px 6px rgba(12,27,42,0.08);
   --shadow-md: 0 4px 16px rgba(12,27,42,0.10);
 
+  /* Borde para separar muebles individuales en vistas ortográficas — se
+     adapta al tema (oscuro en claro, claro en oscuro). */
+  --ortho-edge: rgba(0, 0, 0, 0.35);
+
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -54,6 +58,8 @@
 
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+
+  --ortho-edge: rgba(255, 255, 255, 0.35);
 }
 
 /* Globals */
@@ -257,6 +263,34 @@ input, textarea, select {
 }
 .action-btn:hover:not(:disabled) {
   box-shadow: var(--shadow-sm);
+}
+
+/* Inventario card en InventoryManagerModal */
+.inv-card:hover {
+  background: var(--surface-hover) !important;
+  box-shadow: var(--shadow-sm);
+}
+.inv-footer-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 150ms ease;
+}
+.inv-footer-btn:hover:not(:disabled) {
+  background: var(--bg-subtle);
+}
+.inv-footer-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Opción dentro del dropdown de estrategias */

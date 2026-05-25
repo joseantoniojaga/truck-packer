@@ -112,8 +112,8 @@ describe('App: flujo de inventario vacío', () => {
   it('crear inventario vacío "Test" → placeholder y lista vacía', () => {
     render(<App />);
 
-    fireEvent.click(screen.getByText(/Inventarios/));
-    fireEvent.click(screen.getByText(/Crear inventario nuevo/));
+    fireEvent.click(screen.getByLabelText('Mis inventarios'));
+    fireEvent.click(screen.getByText(/Crear vacío/));
     // PromptModal abierto: escribir y submit
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
@@ -127,14 +127,14 @@ describe('App: flujo de inventario vacío', () => {
 
   it('volver al inventario base desde el manager: muebles reaparecen', () => {
     render(<App />);
-    fireEvent.click(screen.getByText(/Inventarios/));
-    fireEvent.click(screen.getByText(/Crear inventario nuevo/));
+    fireEvent.click(screen.getByLabelText('Mis inventarios'));
+    fireEvent.click(screen.getByText(/Crear vacío/));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Test' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
     expect(screen.queryByText('Buró Hampton')).toBeNull();
 
     // Abrir manager y cargar el Inventario base
-    fireEvent.click(screen.getByText(/Inventarios/));
+    fireEvent.click(screen.getByLabelText('Mis inventarios'));
     const cargarButtons = screen.getAllByRole('button', { name: 'Cargar' });
     const baseCargar = cargarButtons.find(b => !b.disabled);
     fireEvent.click(baseCargar);
