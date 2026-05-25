@@ -210,34 +210,39 @@ export default function InventoryManagerModal({
         })}
       </div>
 
-      {/* Footer: acciones globales en fila, separadas por border-top */}
+      {/* Footer: acciones globales en fila, separadas por border-top.
+          "Sobrescribir" va al final con un divider visual (acción destructiva,
+          se separa del flujo principal "Crear" / "Guardar como"). */}
       <div style={{
-        display: "flex", gap: 6, paddingTop: 12,
+        display: "flex", gap: 6, paddingTop: 14,
         borderTop: "1px solid var(--border)",
+        alignItems: "center",
       }}>
         <button
           onClick={() => setPromptState({ kind: 'createEmpty' })}
           className="inv-footer-btn"
           style={{ color: "var(--success)" }}
         >
-          <Plus size={14}/>Crear vacío
+          <Plus size={18}/>Crear vacío
         </button>
         <button
           onClick={() => setPromptState({ kind: 'saveAsNew' })}
           className="inv-footer-btn"
           style={{ color: "var(--primary)" }}
         >
-          <Save size={14}/>Guardar actual
+          <Save size={18}/>Guardar como
         </button>
+        <div aria-hidden style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
         <button
           onClick={handleOverwriteActive}
           disabled={!activeInventoryId}
           className="inv-footer-btn"
           style={{ color: savedFlash ? "var(--success)" : "var(--warning)" }}
+          title="Reemplaza los items del inventario activo con los actuales"
         >
           {savedFlash
-            ? <><Check size={14}/>Guardado</>
-            : <><Save size={14}/>Sobrescribir activo</>}
+            ? <><Check size={18}/>Guardado</>
+            : <><Save size={18}/>Sobrescribir</>}
         </button>
       </div>
 

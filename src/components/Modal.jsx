@@ -6,12 +6,16 @@
 //   titleColor  - color for the header text
 //   accentColor - color used for the card's border
 //   maxWidth    - optional card max width (default 340)
+//   nested      - boolean; cuando true, NO renderiza el backdrop (para modales
+//                 que abren sobre otros modales — evita stacking de overlays)
 //   children    - body content
-export default function Modal({ open, onClose, title, titleColor, accentColor, maxWidth = 340, children }) {
+export default function Modal({ open, onClose, title, titleColor, accentColor, maxWidth = 340, nested = false, children }) {
   if (!open) return null;
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1000,
+      position: "fixed", inset: 0,
+      background: nested ? "transparent" : "rgba(0,0,0,0.8)",
+      zIndex: nested ? 1100 : 1000,
       display: "flex", alignItems: "center", justifyContent: "center", padding: 20
     }}>
       <div style={{
@@ -20,7 +24,7 @@ export default function Modal({ open, onClose, title, titleColor, accentColor, m
         boxShadow: "var(--shadow-md)"
       }}>
         {title && (
-          <div style={{ fontSize: 14, fontWeight: 700, color: titleColor, marginBottom: 10 }}>
+          <div style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: titleColor, marginBottom: 14 }}>
             {title}
           </div>
         )}

@@ -176,7 +176,7 @@ describe('InventoryManagerModal — acciones', () => {
       inventories: invs, activeInventoryId: 'a', items: currentItems,
     });
 
-    fireEvent.click(screen.getByText(/Guardar actual/));
+    fireEvent.click(screen.getByText(/Guardar como/));
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Snapshot 1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
@@ -197,7 +197,7 @@ describe('InventoryManagerModal — acciones', () => {
     const currentItems = [sampleItem({ id: 1, name: 'nuevo', load: 3 })];
     mountModal({ inventories: invs, activeInventoryId: 'a', items: currentItems });
 
-    fireEvent.click(screen.getByText(/Sobrescribir activo/));
+    fireEvent.click(screen.getByText(/Sobrescribir/));
 
     // Storage actualizado (sin load)
     const after = loadInventories()[0];

@@ -434,7 +434,7 @@ export default function App(){
             <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="backToFront"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="backToFront"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><ArrowLeftRight size={14}/>Fondo→Frente</button>
           </div>
 
-          <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10}}>
+          <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,overflow:"hidden",display:"flex",flexDirection:"column"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>Muebles</span>
               <div style={{display:"flex",gap:4}}>
@@ -455,7 +455,7 @@ export default function App(){
                 </button>
               </div>
             )}
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:"60vh",overflowY:"auto",margin:"0 -4px",padding:"0 4px"}}>
               {items.map(a=>{
                 const pk=pkC[a.id]||0;
                 return (
@@ -550,7 +550,7 @@ export default function App(){
             />
 
             {/* Contenido del visor */}
-            <div className="viewer-content" style={{padding:viewMode==="all"?"120px 16px 16px":(viewMode!=="3d"?"120px 0 0":0),overflowY:viewMode==="all"?"auto":"hidden"}}>
+            <div className="viewer-content" style={{padding:viewMode==="all"?"140px 16px 16px":(viewMode!=="3d"?"160px 320px 24px 24px":0),overflowY:viewMode==="all"?"auto":"hidden"}}>
               {tLoad===0 ? (
                 <div style={{textAlign:"center",color:"var(--text-tertiary)",fontSize:13,padding:"40px"}}>
                   Usa + o una estrategia
@@ -566,7 +566,7 @@ export default function App(){
                   ))}
                 </div>
               ) : (
-                <div style={{width:"100%",padding:"0 24px 24px"}}>
+                <div style={{width:"100%",maxWidth:"100%",maxHeight:"60vh"}}>
                   <OV placed={placed} vk={viewMode} selId={selId} onSel={setSelId} trailer={TR}/>
                 </div>
               )}

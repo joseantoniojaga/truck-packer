@@ -45,7 +45,7 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
         >
           <Truck size={20} color="#FFFFFF" />
         </div>
-        <span style={{ fontWeight: 700, fontSize: 18, color: "var(--text-primary)" }}>
+        <span style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-primary)" }}>
           Truck Packer
         </span>
       </div>
@@ -55,7 +55,7 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
         style={{
           flex: 1,
           textAlign: "center",
-          fontSize: 14,
+          fontSize: "var(--text-sm)",
           color: "var(--text-secondary)",
           minWidth: 0,
           whiteSpace: "nowrap",
@@ -73,7 +73,8 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
-            padding: "6px 14px",
+            padding: "0 16px",
+            height: 36,
             background: "var(--bg-subtle)",
             border: "1px solid var(--border)",
             borderRadius: 999,
@@ -88,7 +89,7 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
               display: "inline-block",
             }}
           />
-          <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
+          <span style={{ fontSize: "var(--text-sm)", color: "var(--text-primary)", fontWeight: 600 }}>
             {capacityText}
           </span>
         </div>

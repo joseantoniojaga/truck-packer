@@ -22,6 +22,7 @@ export default function PromptModal({
   open, title, label, description, placeholder, initialValue = '',
   submitLabel = 'Crear', submitIcon: SubmitIcon = Plus,
   accentColor, validate, onSubmit, onCancel,
+  nested = true,
 }) {
   const [value, setValue] = useState(initialValue);
 
@@ -56,6 +57,7 @@ export default function PromptModal({
       titleColor={COLORS.cyan}
       accentColor={accentColor || (COLORS.cyan + '44')}
       maxWidth={420}
+      nested={nested}
     >
       <form onSubmit={handleSubmit}>
         <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>

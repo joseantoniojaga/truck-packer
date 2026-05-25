@@ -116,22 +116,23 @@ export default function FurnitureEditorModal({
     onDelete(initialFurniture);
   };
 
+  const TitleIcon = isEdit ? Edit2 : Plus;
+  const titleText = isEdit ? 'Editar mueble' : 'Nuevo mueble';
+
   return (
     <Modal
       open={open} onClose={onClose}
-      title={isEdit
-        ? <span style={{display:'inline-flex',alignItems:'center',gap:6}}><Edit2 size={16}/>Editar mueble</span>
-        : <span style={{display:'inline-flex',alignItems:'center',gap:6}}><Plus size={16}/>Nuevo mueble</span>}
+      title={<span style={{display:'inline-flex',alignItems:'center',gap:8}}><TitleIcon size={20}/>{titleText}</span>}
       titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}
-      maxWidth={380}
+      maxWidth={500}
     >
       {isEdit && (
-        <div style={{ fontSize: 10, color: "var(--text-secondary)", padding: "6px 8px", background: "var(--bg-subtle)", borderRadius: "var(--radius-sm)", marginBottom: 10, lineHeight: 1.4 }}>
+        <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: "var(--radius-sm)", marginBottom: 16, lineHeight: 1.4 }}>
           Si cambias las dimensiones, los muebles ya colocados de este tipo NO se actualizarán automáticamente. Reorganiza la carga después.
         </div>
       )}
 
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Nombre</label>
         <input
           type="text" value={name} maxLength={40}
@@ -142,7 +143,7 @@ export default function FurnitureEditorModal({
         {errors.name && <div style={errorStyle}>{errors.name}</div>}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
         <div>
           <label style={labelStyle}>Ancho (cm)</label>
           <input type="number" min={1} max={500} step={0.5} value={ancho}
@@ -163,58 +164,82 @@ export default function FurnitureEditorModal({
         </div>
       </div>
 
-      {errors.volume && <div style={{ ...errorStyle, marginTop: -4, marginBottom: 8 }}>{errors.volume}</div>}
+      {errors.volume && <div style={{ ...errorStyle, marginTop: -8, marginBottom: 12 }}>{errors.volume}</div>}
 
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Inventario inicial</label>
         <input type="number" min={0} max={999} step={1} value={inv}
                onChange={e => setInv(e.target.value)} style={inputStyle} />
         {errors.inv && <div style={errorStyle}>{errors.inv}</div>}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label style={labelStyle}>Color</label>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+          <label style={{ ...labelStyle, margin: 0 }}>Color</label>
+          {/* Círculo grande mostrando el color seleccionado (sin hex visible) */}
+          <div
+            aria-hidden
+            style={{
+              width: 40, height: 40, borderRadius: "50%",
+              background: color,
+              border: "1px solid var(--border)",
+              boxShadow: "var(--shadow-sm)",
+              flexShrink: 0,
+            }}
+          />
+          {/* Color picker oculto detrás de un pequeño botón */}
           <input
             type="color" value={color}
             onChange={e => setColor(e.target.value)}
-            style={{ width: 40, height: 30, border: `1px solid var(--border)`, borderRadius: "var(--radius-sm)", background: "transparent", cursor: "pointer", padding: 2 }}
+            aria-label="Personalizado"
+            title="Personalizado"
+            style={{
+              width: 32, height: 32, borderRadius: "50%",
+              border: "1px solid var(--border)", background: "transparent",
+              cursor: "pointer", padding: 0,
+            }}
           />
-          <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{color}</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4 }}>
-          {PALETTE.map(c => (
-            <button
-              key={c} type="button" onClick={() => setColor(c)} title={c}
-              style={{
-                height: 22, borderRadius: "var(--radius-sm)", padding: 0, cursor: "pointer", background: c,
-                border: color.toLowerCase() === c.toLowerCase()
-                  ? `2px solid var(--text-primary)`
-                  : `1px solid var(--border)`,
-              }}
-            />
-          ))}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+          {PALETTE.map(c => {
+            const isSelected = color.toLowerCase() === c.toLowerCase();
+            return (
+              <button
+                key={c} type="button" onClick={() => setColor(c)}
+                aria-label={`Color ${c}`} title={c}
+                className="color-swatch"
+                style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  padding: 0, cursor: "pointer", background: c,
+                  border: "1px solid var(--border)",
+                  outline: isSelected ? "3px solid var(--text-primary)" : "none",
+                  outlineOffset: 2,
+                  transition: "transform 150ms ease",
+                }}
+              />
+            );
+          })}
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
         {isEdit && onDelete && (
           <button onClick={handleDelete}
-                  style={{ ...baseBtn, color: "var(--error)", borderColor: alpha('--error', 27), fontSize: 10, padding: "6px 10px" }}>
-            <Trash2 size={12} style={{marginRight:4,verticalAlign:'-2px'}}/>Borrar mueble
+                  className="action-btn"
+                  style={{ background: "transparent", color: "var(--error)", border: `1px solid ${alpha('--error', 27)}`, fontSize: "var(--text-sm)", padding: "8px 14px" }}>
+            <Trash2 size={14}/>Borrar mueble
           </button>
         )}
         <div style={{ flex: 1 }} />
-        <button onClick={onClose} style={{ ...baseBtn, color: "var(--text-secondary)" }}>Cancelar</button>
+        <button onClick={onClose}
+                className="action-btn action-btn--secondary"
+                style={{ padding: "8px 14px", fontSize: "var(--text-sm)" }}>
+          Cancelar
+        </button>
         <button
           onClick={handleSave} disabled={!isValid}
-          style={{
-            ...baseBtn,
-            color: isValid ? "var(--success)" : "var(--text-secondary)",
-            borderColor: isValid ? alpha('--success', 27) : "var(--border)",
-            opacity: isValid ? 1 : 0.5,
-            cursor: isValid ? "pointer" : "not-allowed",
-          }}
+          className="action-btn action-btn--primary"
+          style={{ padding: "8px 14px", fontSize: "var(--text-sm)" }}
         >
           Guardar
         </button>

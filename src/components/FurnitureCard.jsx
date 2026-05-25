@@ -71,7 +71,7 @@ export default function FurnitureCard({
       {/* Nombre + dimensiones */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+          fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-primary)",
           display: "flex", alignItems: "center", gap: 6,
         }}>
           <span style={{
@@ -88,7 +88,7 @@ export default function FurnitureCard({
             />
           )}
         </div>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginTop: 2 }}>
           {f.ancho} × {f.alto} × {f.fondo} cm
         </div>
       </div>
@@ -150,7 +150,7 @@ export default function FurnitureCard({
               fontWeight: 600,
               color: "var(--text-primary)",
               fontFeatureSettings: "'tnum'",
-              fontSize: 14,
+              fontSize: "var(--text-base)",
             }}
           />
           {!editMode && (

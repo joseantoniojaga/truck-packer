@@ -19,6 +19,7 @@ export default function ConfirmModal({
   confirmLabel = 'Aceptar', cancelLabel = 'Cancelar',
   variant = 'default',
   onConfirm, onCancel,
+  nested = true,
 }) {
   useEffect(() => {
     if (!open) return;
@@ -49,6 +50,7 @@ export default function ConfirmModal({
       titleColor={titleColor}
       accentColor={accentColor}
       maxWidth={420}
+      nested={nested}
     >
       <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px' }}>
         {message}

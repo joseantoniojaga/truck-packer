@@ -29,7 +29,7 @@ export default function CapacityCard({
       {/* Label */}
       <div
         style={{
-          fontSize: 10,
+          fontSize: "var(--text-xs)",
           fontWeight: 600,
           letterSpacing: "0.5px",
           color: "var(--text-tertiary)",
@@ -51,7 +51,7 @@ export default function CapacityCard({
       >
         <span
           style={{
-            fontSize: 26,
+            fontSize: "var(--text-xl)",
             fontWeight: 700,
             color: "var(--text-primary)",
             fontFeatureSettings: "'tnum'",
@@ -62,7 +62,7 @@ export default function CapacityCard({
         </span>
         <span
           style={{
-            fontSize: 12,
+            fontSize: "var(--text-sm)",
             color: "var(--text-secondary)",
             fontFeatureSettings: "'tnum'",
             whiteSpace: "nowrap",
@@ -79,7 +79,7 @@ export default function CapacityCard({
       {typeof placedCount === "number" && typeof totalRequested === "number" && totalRequested > 0 && (
         <div style={{
           marginTop: 6,
-          fontSize: 10,
+          fontSize: "var(--text-xs)",
           color: "var(--text-tertiary)",
           fontWeight: 500,
           fontFeatureSettings: "'tnum'",
