@@ -72,7 +72,7 @@ export default function FurnitureCard({
       {/* Nombre + dimensiones */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: "var(--text-md)", fontWeight: 600, color: "var(--text-primary)",
+          fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-primary)",
           display: "flex", alignItems: "center", gap: 6,
         }}>
           <span style={{

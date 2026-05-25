@@ -60,11 +60,11 @@ export default function PromptModal({
       nested={nested}
     >
       <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>
+        <label style={{ display: 'block', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>
           {label}
         </label>
         {description && (
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 8, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 8, lineHeight: 1.4 }}>
             {description}
           </div>
         )}
@@ -79,7 +79,7 @@ export default function PromptModal({
             width: '100%',
             boxSizing: 'border-box',
             padding: '10px 12px',
-            fontSize: 14,
+            fontSize: 'var(--text-base)',
             background: 'var(--bg-subtle)',
             border: `1px solid var(--border)`,
             borderRadius: 'var(--radius-sm)',
@@ -89,14 +89,14 @@ export default function PromptModal({
           }}
         />
         {error && value !== '' && (
-          <div style={{ fontSize: 11, color: 'var(--error)', marginBottom: 4 }}>{error}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--error)', marginBottom: 4 }}>{error}</div>
         )}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
           <button
             type="button"
             className="action-btn action-btn--secondary"
             onClick={onCancel}
-            style={{ padding: '8px 14px', fontSize: 13 }}
+            style={{ padding: '8px 14px', fontSize: 'var(--text-sm)' }}
           >
             Cancelar
           </button>
@@ -104,7 +104,7 @@ export default function PromptModal({
             type="submit"
             className="action-btn action-btn--primary"
             disabled={!canSubmit}
-            style={{ padding: '8px 14px', fontSize: 13 }}
+            style={{ padding: '8px 14px', fontSize: 'var(--text-sm)' }}
           >
             <SubmitIcon size={14} />
             {submitLabel}

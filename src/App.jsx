@@ -18,8 +18,8 @@ import CapacityCard from './components/CapacityCard.jsx';
 import ActionBar from './components/ActionBar.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import {
-  Truck, Box, Package, RotateCcw, Play, Sparkles, X, Plus, Edit2,
-  AlertTriangle, Check, Lightbulb,
+  Box, RotateCcw, Play, Sparkles, X, Plus, Edit2,
+  AlertTriangle, Check,
   ArrowLeftRight, SkipBack, Rewind, Pause, SkipForward, Layers,
 } from 'lucide-react';
 
@@ -85,6 +85,10 @@ export default function App(){
   const [editMode,setEM]=useState(false);
   const [computing,setComp]=useState(false);
   const [runningStrategyId,setRunningStrategyId]=useState(null);
+  // Última estrategia aplicada — marca la opción en el dropdown del ActionBar.
+  // Se limpia (null) ante cualquier mutación manual de la carga (add/remove/
+  // setLoad/allZero/reorganize) porque deja de ser la "vista vigente".
+  const [lastAppliedStrategyId,setLastAppliedStrategyId]=useState(null);
   const [conflict,setConflict]=useState(null);
   const [packMode,setPackMode]=useState("backToFront");
   const [modeSwitchTarget,setModeSwitchTarget]=useState(null);
@@ -129,6 +133,7 @@ export default function App(){
     const newItem={id:it.id,name:it.name,color:it.color,x:pos.x,y:pos.y,z:pos.z,l:pos.l,w:pos.w,h:pos.h};
     setItems(items.map(x=>x.id===id?{...x,load:x.load+1}:x));
     setPlaced([...placed,newItem]);
+    setLastAppliedStrategyId(null);
   },[items,placed,packMode]);
 
   const handleSwapConfirm=useCallback(()=>{
@@ -151,6 +156,7 @@ export default function App(){
     const newPlaced=placed.filter((_,i)=>i!==realIndex);
     setItems(items.map(x=>x.id===id?{...x,load:x.load-1}:x));
     setPlaced(newPlaced);
+    setLastAppliedStrategyId(null);
   },[items,placed]);
 
   // FULL REPACK (strategies, reset)
@@ -167,6 +173,7 @@ export default function App(){
     const newLoad=Math.max(0,Math.min(it.inv,v|0));
     if(newLoad===it.load)return;
     doRepack(items.map(x=>x.id===id?{...x,load:newLoad}:x));
+    setLastAppliedStrategyId(null);
   },[items,doRepack]);
 
   // Persiste los items del inventario activo en localStorage (sin el campo load).
@@ -231,6 +238,7 @@ export default function App(){
       }
       setPlaced(newPlaced);
     }
+    setLastAppliedStrategyId(null);
   },[items,placed]);
 
   const startSim=()=>{
@@ -261,7 +269,7 @@ export default function App(){
 
   useEffect(()=>{if(!simMode&&simPlayRef.current){clearInterval(simPlayRef.current);simPlayRef.current=null;}},[simMode]);
 
-  const runStrat=(k)=>{setRunningStrategyId(k);setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setComp(false);setRunningStrategyId(null);},50);};
+  const runStrat=(k)=>{setRunningStrategyId(k);setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setComp(false);setRunningStrategyId(null);setLastAppliedStrategyId(k);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
 
   const B={borderRadius:"var(--radius-md)",border:`1px solid var(--border)`,background:"var(--bg-subtle)",cursor:"pointer",fontWeight:600};
@@ -288,44 +296,44 @@ export default function App(){
       {/* CONFLICT */}
       <Modal open={!!conflict} onClose={()=>setConflict(null)} title={iconTitle(AlertTriangle, "Conflicto de espacio")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
         {conflict&&(<>
-          <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 10px"}}>No hay hueco disponible para <b style={{color:"var(--primary)"}}>{conflict.itemName}</b>. Reorganizar desplazaría:</p>
+          <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 10px"}}>No hay hueco disponible para <b style={{color:"var(--primary)"}}>{conflict.itemName}</b>. Reorganizar desplazaría:</p>
           {conflict.displaced.map(d=>(
-            <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",marginBottom:4,fontSize:12}}>
+            <div key={d.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",marginBottom:4,fontSize:"var(--text-sm)"}}>
               <span>{d.name}</span><span style={{color:"var(--error)"}}>{d.oldC}→{d.newC} (−{d.lost})</span>
             </div>
           ))}
           <div style={{display:"flex",gap:8,marginTop:12}}>
-            <button onClick={()=>{setItems(conflict.newItems);setPlaced(conflict.newP);setConflict(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--warning)",borderColor:alpha('--warning', 27)}}>Reorganizar</button>
-            <button onClick={()=>setConflict(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
+            <button onClick={()=>{setItems(conflict.newItems);setPlaced(conflict.newP);setConflict(null);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--warning)",borderColor:alpha('--warning', 27)}}>Reorganizar</button>
+            <button onClick={()=>setConflict(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
           </div>
         </>)}
       </Modal>
 
       {/* MODE SWITCH CONFIRM */}
       <Modal open={!!modeSwitchTarget} onClose={()=>setModeSwitchTarget(null)} title={iconTitle(AlertTriangle, "Cambiar modo de acomodo")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
-        <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
+        <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--warning)",borderColor:alpha('--warning', 27)}}>Sí, cambiar</button>
-          <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
+          <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--warning)",borderColor:alpha('--warning', 27)}}>Sí, cambiar</button>
+          <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
         </div>
       </Modal>
 
       {/* STRATEGY CONFIRM */}
       <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title={iconTitle(Sparkles, "Aplicar estrategia")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
-        <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
+        <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
-          <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
+          <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
+          <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
         </div>
       </Modal>
 
       {/* REORGANIZE ADD CONFIRM */}
       <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title={iconTitle(RotateCcw, "Reorganizar carga")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
         {pendingAdd&&(<>
-          <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"var(--primary)"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
+          <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"var(--primary)"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
-            <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>No, dejarlo así</button>
+            <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
+            <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>No, dejarlo así</button>
           </div>
         </>)}
       </Modal>
@@ -341,36 +349,36 @@ export default function App(){
       >
         {swapOptions&&(swapOptions.options.length===0?(
           <>
-            <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"var(--primary)"}}>{swapOptions.itemName}</b>.</p>
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>Entendido</button>
+            <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"var(--primary)"}}>{swapOptions.itemName}</b>.</p>
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Entendido</button>
           </>
         ):(
           <>
-            <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"var(--primary)"}}>{swapOptions.itemName}</b>, elige una opción:</p>
+            <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"var(--primary)"}}>{swapOptions.itemName}</b>, elige una opción:</p>
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
               {swapOptions.options.map((opt,i)=>(
-                <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:`1px solid var(--border)`,borderRadius:"var(--radius-md)",cursor:"pointer",width:"100%"}}>
+                <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);setLastAppliedStrategyId(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:`1px solid var(--border)`,borderRadius:"var(--radius-md)",cursor:"pointer",width:"100%"}}>
                   <div style={{width:12,height:12,borderRadius:2,background:opt.removeColor,flexShrink:0}}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:11,fontWeight:600,color:"var(--text-primary)"}}>Quitar {opt.removeCount} {opt.removeName}</div>
-                    <div style={{fontSize:10,color:"var(--text-tertiary)",marginTop:2}}>
+                    <div style={{fontSize:"var(--text-xs)",fontWeight:600,color:"var(--text-primary)"}}>Quitar {opt.removeCount} {opt.removeName}</div>
+                    <div style={{fontSize:"var(--text-xs)",color:"var(--text-tertiary)",marginTop:2}}>
                       Libera {fmtV(opt.removeTotalVol)} de espacio
                     </div>
                   </div>
                 </button>
               ))}
             </div>
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
+            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
           </>
         ))}
       </Modal>
 
       {/* REORG CONFIRM */}
       <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title={iconTitle(RotateCcw, "Reorganizar carga")} titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}>
-        <p style={{fontSize:12,color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
+        <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);}} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
-          <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:11,color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
+          <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);setLastAppliedStrategyId(null);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
+          <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
         </div>
       </Modal>
 
@@ -432,32 +440,50 @@ export default function App(){
         <div className="tp-left">
 
           <div style={{display:"flex",gap:4,marginBottom:8}}>
-            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="free"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="free"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="free"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Box size={14}/>Libre</button>
-            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:11,color:packMode==="backToFront"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="backToFront"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="backToFront"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><ArrowLeftRight size={14}/>Fondo→Frente</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("free");else setPackMode("free");}} style={{...B,flex:1,padding:"7px 0",fontSize:"var(--text-xs)",color:packMode==="free"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="free"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="free"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><Box size={14}/>Libre</button>
+            <button onClick={()=>{if(placed.length>0)setModeSwitchTarget("backToFront");else setPackMode("backToFront");}} style={{...B,flex:1,padding:"7px 0",fontSize:"var(--text-xs)",color:packMode==="backToFront"?"var(--bg-base)":"var(--text-secondary)",background:packMode==="backToFront"?"var(--primary)":"var(--bg-subtle)",borderColor:packMode==="backToFront"?"var(--primary)":"var(--border)",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><ArrowLeftRight size={14}/>Fondo→Frente</button>
           </div>
 
           <div style={{background:"var(--surface)",borderRadius:"var(--radius-md)",padding:10,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)"}}>Muebles</span>
-              <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>setEM(!editMode)} style={{...B,padding:"3px 7px",fontSize:10,color:editMode?"var(--warning)":"var(--text-secondary)",display:"inline-flex",alignItems:"center",gap:4}}>{editMode?<><Check size={12}/>Listo</>:<><Edit2 size={12}/>Inventario</>}</button>
-                <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);}} style={{...B,padding:"3px 7px",fontSize:10,color:"var(--error)"}}>Todos a 0</button>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:"var(--text-lg)",fontWeight:700,color:"var(--text-primary)"}}>Muebles</span>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                {!editMode && (
+                  <button
+                    onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setLastAppliedStrategyId(null);}}
+                    style={{...B,padding:"8px 14px",fontSize:"var(--text-sm)",borderRadius:"var(--radius-md)",color:"var(--error)",display:"inline-flex",alignItems:"center",gap:6}}
+                  >
+                    Todos a 0
+                  </button>
+                )}
+                <button
+                  onClick={()=>setEM(!editMode)}
+                  style={{...B,padding:"8px 14px",fontSize:"var(--text-sm)",borderRadius:"var(--radius-md)",color:editMode?"var(--warning)":"var(--text-secondary)",display:"inline-flex",alignItems:"center",gap:6}}
+                >
+                  {editMode
+                    ? <><Check size={14}/>Guardar inventario</>
+                    : <><Edit2 size={14}/>Inventario</>}
+                </button>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,marginBottom:6,padding:"4px 8px",background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",fontSize:9,color:"var(--text-tertiary)"}}>
+            <div style={{display:"flex",gap:8,marginBottom:6,padding:"4px 8px",background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",fontSize:"var(--text-xs)",color:"var(--text-tertiary)"}}>
               {editMode?<span>Editando <b style={{color:"var(--warning)"}}>inventario</b></span>
               :<><span style={{color:"var(--success)"}}>colocadas</span><span>/</span><span style={{color:"var(--text-primary)"}}>tenemos</span><span>— + agrega sin mover los demás</span></>}
             </div>
             {items.length===0&&(
-              <div style={{textAlign:"center",padding:"30px 10px",color:"var(--text-secondary)",fontSize:12,lineHeight:1.5}}>
+              <div style={{textAlign:"center",padding:"30px 10px",color:"var(--text-secondary)",fontSize:"var(--text-sm)",lineHeight:1.5}}>
                 <p style={{margin:"0 0 12px"}}>Este inventario está vacío.<br/>Agrega tu primer mueble.</p>
-                <button onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
-                        style={{...B,padding:"10px 18px",fontSize:12,color:"var(--primary)",borderColor:alpha('--primary', 27),display:"inline-flex",alignItems:"center",gap:6}}>
+                <button
+                  type="button"
+                  className="add-furniture-btn"
+                  onClick={()=>{setEditingFurniture(null);setShowFurnitureEditor(true);}}
+                  style={{display:"inline-flex",width:"auto",padding:"10px 18px"}}
+                >
                   <Plus size={14}/>Agregar mueble
                 </button>
               </div>
             )}
-            <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:"60vh",overflowY:"auto",margin:"0 -4px",padding:"0 4px"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:10,margin:"0 -4px",padding:"0 4px"}}>
               {items.map(a=>{
                 const pk=pkC[a.id]||0;
                 return (
@@ -491,10 +517,6 @@ export default function App(){
                 </button>
               )}
             </div>
-          </div>
-
-          <div style={{marginTop:10,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,fontSize:10,color:"var(--text-secondary)",lineHeight:1.5}}>
-            <Lightbulb size={14} style={{verticalAlign:"-2px",color:"var(--text-secondary)"}}/> <b>+ es incremental:</b> busca el mejor hueco sin mover nada. <b>−</b> quita el último y reorganiza. Las estrategias reorganizan todo para optimizar.
           </div>
 
         </div>{/* end left */}
@@ -546,6 +568,7 @@ export default function App(){
               canSimulate={placed.length>0}
               isCalculating={computing}
               activeStrategyId={runningStrategyId}
+              lastAppliedStrategyId={lastAppliedStrategyId}
               strategies={PACKING_STRATEGIES}
               onReorganize={()=>setShowReorgConfirm(true)}
               onApplyStrategy={handleStrat}
@@ -553,29 +576,25 @@ export default function App(){
             />
 
             {/* Contenido del visor */}
-            <div className="viewer-content" style={{padding:viewMode==="all"?"140px 16px 16px":0,overflowY:viewMode==="all"?"auto":"hidden"}}>
-              {viewMode==="all" ? (
-                tLoad===0 ? null : (
-                  <div style={{display:"flex",flexWrap:"wrap",gap:8,width:"100%",alignSelf:"flex-start"}}>
-                    {["top","bottom","right","left","front","back"].map(vk=>(
-                      <OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
-                    ))}
-                  </div>
-                )
+            <div className="viewer-content" style={{padding:viewMode==="all"&&placed.length>0?"140px 16px 16px":0,overflowY:viewMode==="all"&&placed.length>0?"auto":"hidden"}}>
+              {placed.length===0 ? (
+                <EmptyViewerState totalInventory={tInv}/>
+              ) : viewMode==="all" ? (
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,width:"100%",alignSelf:"flex-start"}}>
+                  {["top","bottom","right","left","front","back"].map(vk=>(
+                    <OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
+                  ))}
+                </div>
               ) : (
                 <div style={{width:"100%",height:"100%"}}>
-                  {placed.length===0 ? (
-                    <EmptyViewerState/>
-                  ) : (
-                    <Viewer3D
-                      placed={simMode?simSequence.map(s=>s.item):placed}
-                      selId={selId} stRef={stRef}
-                      onZoomIn={onZoomIn} onZoomOut={onZoomOut}
-                      simMode={simMode} simStep={simStep}
-                      trailer={TR}
-                      cameraMode={viewMode==="3d" ? "free" : viewMode==="front" ? "front" : viewMode==="right" ? "side" : "top"}
-                    />
-                  )}
+                  <Viewer3D
+                    placed={simMode?simSequence.map(s=>s.item):placed}
+                    selId={selId} stRef={stRef}
+                    onZoomIn={onZoomIn} onZoomOut={onZoomOut}
+                    simMode={simMode} simStep={simStep}
+                    trailer={TR}
+                    cameraMode={viewMode==="3d" ? "free" : viewMode==="front" ? "front" : viewMode==="right" ? "side" : "top"}
+                  />
                 </div>
               )}
             </div>
@@ -584,29 +603,29 @@ export default function App(){
           {simMode ? (
             <div style={{marginTop:8,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,border:`1px solid ${alpha('--secondary', 27)}`,flexShrink:0}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:600,color:"var(--secondary)"}}>Simulador de carga</span>
-                <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:10,color:"var(--error)",borderColor:alpha('--error', 27),display:"inline-flex",alignItems:"center",gap:4}}><X size={12}/>Salir</button>
+                <span style={{fontSize:"var(--text-xs)",fontWeight:600,color:"var(--secondary)"}}>Simulador de carga</span>
+                <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:"var(--text-xs)",color:"var(--error)",borderColor:alpha('--error', 27),display:"inline-flex",alignItems:"center",gap:4}}><X size={12}/>Salir</button>
               </div>
               <div style={{background:"var(--surface)",borderRadius:"var(--radius-sm)",height:6,marginBottom:8,overflow:"hidden"}}>
                 <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,var(--secondary),var(--primary))`,borderRadius:"var(--radius-sm)",transition:"width 0.3s"}}/>
               </div>
               {simStep>0&&simStep<=simSequence.length&&(
-                <div style={{fontSize:11,color:"var(--text-secondary)",marginBottom:8,background:"var(--surface)",borderRadius:"var(--radius-sm)",padding:"6px 8px",lineHeight:1.4}}>
+                <div style={{fontSize:"var(--text-xs)",color:"var(--text-secondary)",marginBottom:8,background:"var(--surface)",borderRadius:"var(--radius-sm)",padding:"6px 8px",lineHeight:1.4}}>
                   <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
                 </div>
               )}
-              {simStep===0&&<div style={{fontSize:11,color:"var(--text-tertiary)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>Presiona <Play size={12} style={{display:"inline-block"}}/> para avanzar paso a paso</div>}
-              {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:11,color:"var(--success)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><Check size={14}/>Carga completa ({simSequence.length} muebles)</div>}
+              {simStep===0&&<div style={{fontSize:"var(--text-xs)",color:"var(--text-tertiary)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>Presiona <Play size={12} style={{display:"inline-block"}}/> para avanzar paso a paso</div>}
+              {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:"var(--text-xs)",color:"var(--success)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><Check size={14}/>Carga completa ({simSequence.length} muebles)</div>}
               <div style={{display:"flex",gap:4,justifyContent:"center"}}>
-                <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Primer paso" aria-label="Primer paso"><SkipBack size={14}/></button>
-                <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Anterior" aria-label="Anterior"><Rewind size={14}/></button>
-                <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:12,color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27),display:"inline-flex",alignItems:"center",gap:6}}>{simPlaying?<><Pause size={14}/>Pausar</>:<><Play size={14}/>Auto</>}</button>
-                <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Siguiente" aria-label="Siguiente"><Play size={14}/></button>
-                <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:13,color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Último paso" aria-label="Último paso"><SkipForward size={14}/></button>
+                <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Primer paso" aria-label="Primer paso"><SkipBack size={14}/></button>
+                <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Anterior" aria-label="Anterior"><Rewind size={14}/></button>
+                <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:"var(--text-sm)",color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27),display:"inline-flex",alignItems:"center",gap:6}}>{simPlaying?<><Pause size={14}/>Pausar</>:<><Play size={14}/>Auto</>}</button>
+                <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Siguiente" aria-label="Siguiente"><Play size={14}/></button>
+                <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Último paso" aria-label="Último paso"><SkipForward size={14}/></button>
               </div>
             </div>
           ) : (
-            <p style={{margin:"8px 0 0",fontSize:11,color:"var(--text-tertiary)",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
+            <p style={{margin:"8px 0 0",fontSize:"var(--text-xs)",color:"var(--text-tertiary)",textAlign:"center",flexShrink:0}}>Arrastra para rotar · Scroll para zoom · Muebles se quedan en su lugar al agregar</p>
           )}
 
         </div>{/* end right */}

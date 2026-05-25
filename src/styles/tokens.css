@@ -221,7 +221,7 @@ input, textarea, select {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -343,11 +343,12 @@ input, textarea, select {
   justify-content: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 13px;
-  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  font-size: var(--text-sm);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 .add-furniture-btn:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
   border-color: var(--text-tertiary);
+  box-shadow: var(--shadow-sm);
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { RotateCcw, Sparkles, Play, Loader2 } from 'lucide-react';
+import { RotateCcw, Sparkles, Play, Loader2, Check } from 'lucide-react';
 
 // Action bar flotante en la parte inferior del visor.
 //
@@ -14,7 +14,7 @@ import { RotateCcw, Sparkles, Play, Loader2 } from 'lucide-react';
 //   onSimulate: () => void
 export default function ActionBar({
   canReorganize, canSimulate, isCalculating,
-  activeStrategyId, strategies = [],
+  activeStrategyId, lastAppliedStrategyId = null, strategies = [],
   onReorganize, onApplyStrategy, onSimulate,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -139,6 +139,7 @@ export default function ActionBar({
             </div>
             {strategies.map(s => {
               const isActive = activeStrategyId === s.key;
+              const isLastApplied = !isActive && lastAppliedStrategyId === s.key;
               return (
                 <button
                   key={s.key}
@@ -148,19 +149,23 @@ export default function ActionBar({
                   onClick={() => handleApply(s.key)}
                   disabled={isCalculating}
                   style={{
-                    background: isActive ? "var(--bg-subtle)" : "transparent",
+                    background: (isActive || isLastApplied) ? "var(--bg-subtle)" : "transparent",
+                    borderLeft: isLastApplied ? "3px solid var(--primary)" : "3px solid transparent",
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, textAlign: "left", minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                    <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-primary)" }}>
                       {s.label}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
                       {s.desc}
                     </div>
                   </div>
                   {isActive && isCalculating && (
                     <Loader2 size={14} className="animate-spin" style={{ color: "var(--accent)", flexShrink: 0 }} />
+                  )}
+                  {isLastApplied && (
+                    <Check size={14} style={{ color: "var(--success)", flexShrink: 0 }} aria-label="Aplicada" />
                   )}
                 </button>
               );

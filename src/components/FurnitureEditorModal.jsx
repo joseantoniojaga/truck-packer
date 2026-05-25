@@ -1,30 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Modal from './Modal.jsx';
 import { alpha } from '../styles/util.js';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 
-// Paleta sugerida (botones rápidos debajo del color picker).
+// Paleta curada de 12 colores. La distribución visual es 6×2 (en CSS
+// flex-wrap), y al final aparece un botón "+" para abrir el color picker
+// nativo cuando ninguno de los 12 sirve.
 const PALETTE = [
-  "#E07A5F", "#7B9ACC", "#81B29A", "#F2CC8F",
-  "#6A994E", "#A7C957", "#BC4749", "#9B5DE5",
-  "#0F4C5C", "#06B6D4", "#F59E0B", "#A78BFA",
+  "#E07A5F", "#81A7C8", "#9BBFA7", "#E9C892", "#6FA068", "#A8C765",
+  "#C0322B", "#9B6CCF", "#1F5E6B", "#42B0D5", "#E08A1F", "#B8A0D8",
 ];
 
 const inputStyle = {
-  fontSize: 12, padding: "6px 8px",
+  fontSize: "var(--text-sm)", padding: "6px 8px",
   background: "var(--bg-subtle)", border: `1px solid var(--border)`,
   borderRadius: "var(--radius-sm)", color: "var(--text-primary)", outline: "none", width: "100%",
   boxSizing: "border-box",
 };
 
-const labelStyle = { fontSize: 10, color: "var(--text-secondary)", marginBottom: 3, display: "block" };
-const errorStyle = { fontSize: 10, color: "var(--error)", marginTop: 3 };
-
-const baseBtn = {
-  borderRadius: "var(--radius-sm)", border: `1px solid var(--border)`, background: "var(--bg-subtle)",
-  cursor: "pointer", fontWeight: 600,
-  padding: "8px 12px", fontSize: 11,
-};
+const labelStyle = { fontSize: "var(--text-xs)", color: "var(--text-secondary)", marginBottom: 3, display: "block" };
+const errorStyle = { fontSize: "var(--text-xs)", color: "var(--error)", marginTop: 3 };
 
 export default function FurnitureEditorModal({
   open, onClose, onSave, onDelete,
@@ -39,6 +34,9 @@ export default function FurnitureEditorModal({
   const [fondo, setFondo] = useState('');
   const [inv, setInv] = useState('');
   const [color, setColor] = useState(PALETTE[0]);
+  // Ref al input type="color" oculto — se dispara con click() desde el
+  // botón "+" custom para mostrar el picker nativo del sistema.
+  const colorInputRef = useRef(null);
 
   // Reset form cada vez que el modal abre o cambia el mueble inicial
   useEffect(() => {
@@ -176,32 +174,7 @@ export default function FurnitureEditorModal({
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
-          <label style={{ ...labelStyle, margin: 0 }}>Color</label>
-          {/* Círculo grande mostrando el color seleccionado (sin hex visible) */}
-          <div
-            aria-hidden
-            style={{
-              width: 40, height: 40, borderRadius: "50%",
-              background: color,
-              border: "1px solid var(--border)",
-              boxShadow: "var(--shadow-sm)",
-              flexShrink: 0,
-            }}
-          />
-          {/* Color picker oculto detrás de un pequeño botón */}
-          <input
-            type="color" value={color}
-            onChange={e => setColor(e.target.value)}
-            aria-label="Personalizado"
-            title="Personalizado"
-            style={{
-              width: 32, height: 32, borderRadius: "50%",
-              border: "1px solid var(--border)", background: "transparent",
-              cursor: "pointer", padding: 0,
-            }}
-          />
-        </div>
+        <label style={{ ...labelStyle, marginBottom: 10 }}>Color</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           {PALETTE.map(c => {
             const isSelected = color.toLowerCase() === c.toLowerCase();
@@ -221,6 +194,42 @@ export default function FurnitureEditorModal({
               />
             );
           })}
+          {/* Botón "+" custom: dispara el color picker nativo (input oculto).
+              Muestra el color elegido como background cuando NO es uno de la
+              paleta — así se ve cuál fue el custom seleccionado. */}
+          {(() => {
+            const isCustom = !PALETTE.some(c => c.toLowerCase() === color.toLowerCase());
+            return (
+              <button
+                type="button"
+                onClick={() => colorInputRef.current?.click()}
+                aria-label="Color personalizado"
+                title="Color personalizado"
+                className="color-swatch"
+                style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  padding: 0, cursor: "pointer",
+                  background: isCustom ? color : "transparent",
+                  border: `2px dashed var(--border)`,
+                  outline: isCustom ? "3px solid var(--text-primary)" : "none",
+                  outlineOffset: 2,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  color: isCustom ? "transparent" : "var(--text-tertiary)",
+                  transition: "transform 150ms ease",
+                }}
+              >
+                <Plus size={16} />
+              </button>
+            );
+          })()}
+          <input
+            ref={colorInputRef}
+            type="color" value={color}
+            onChange={e => setColor(e.target.value)}
+            style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+            tabIndex={-1}
+            aria-hidden
+          />
         </div>
       </div>
 

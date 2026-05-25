@@ -52,7 +52,7 @@ export default function ConfirmModal({
       maxWidth={420}
       nested={nested}
     >
-      <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px' }}>
+      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px' }}>
         {message}
       </p>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -60,7 +60,7 @@ export default function ConfirmModal({
           type="button"
           className="action-btn action-btn--secondary"
           onClick={onCancel}
-          style={{ padding: '8px 14px', fontSize: 13 }}
+          style={{ padding: '8px 14px', fontSize: 'var(--text-sm)' }}
         >
           {cancelLabel}
         </button>
@@ -69,7 +69,7 @@ export default function ConfirmModal({
           className="action-btn action-btn--primary"
           onClick={onConfirm}
           style={{
-            padding: '8px 14px', fontSize: 13,
+            padding: '8px 14px', fontSize: 'var(--text-sm)',
             background: variant === 'danger' ? 'var(--error)' : 'var(--primary)',
           }}
         >

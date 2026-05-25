@@ -1,9 +1,16 @@
-import { Package } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 
-// Estado vacío del visor cuando no hay muebles colocados todavía.
-// Reemplaza al Viewer3D (no se renderiza Three.js en ese caso) para
-// evitar el costo de inicializar la escena y proyectar un mensaje claro.
-export default function EmptyViewerState() {
+// Estado vacío del visor. Cambia el mensaje según el contexto:
+//   - inventario completamente vacío (totalInventory===0) → "Crea tu primer mueble"
+//   - hay muebles definidos pero ninguno colocado     → "Usa + o una estrategia"
+// Se renderiza absoluto sobre el viewer-content para que ocupe siempre el
+// centro visual del área, sin importar la vista activa (3D, ortográficas o
+// "Todas"). pointer-events: none porque no debe interceptar clicks del visor.
+export default function EmptyViewerState({ totalInventory = 0 }) {
+  const isInventoryEmpty = totalInventory === 0;
+  const Icon = isInventoryEmpty ? Plus : Package;
+  const text = isInventoryEmpty ? "Crea tu primer mueble" : "Usa + o una estrategia";
+
   return (
     <div style={{
       position: "absolute",
@@ -19,12 +26,12 @@ export default function EmptyViewerState() {
       textAlign: "center",
       padding: 24,
     }}>
-      <Package size={48} aria-hidden />
+      <Icon size={48} strokeWidth={1.5} aria-hidden />
       <div style={{
         fontSize: "var(--text-md)",
         fontWeight: 500,
       }}>
-        Usa + o una estrategia
+        {text}
       </div>
     </div>
   );

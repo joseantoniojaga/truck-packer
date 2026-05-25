@@ -155,11 +155,12 @@ describe('FurnitureEditorModal — color picker y presets', () => {
     const { container } = renderModal();
     const { color } = getInputs(container);
     expect(color.value.toLowerCase()).toBe('#e07a5f'); // primero del PALETTE
-    // Buscar el botón del preset cyan (#06B6D4) por su title
-    const preset = container.querySelector('button[title="#06B6D4"]');
+    // Buscar el botón del preset cyan (#42B0D5) — color en la paleta curada
+    // actual de 12 colores (ver FurnitureEditorModal.jsx).
+    const preset = container.querySelector('button[title="#42B0D5"]');
     expect(preset).not.toBeNull();
     fireEvent.click(preset);
-    expect(color.value.toLowerCase()).toBe('#06b6d4');
+    expect(color.value.toLowerCase()).toBe('#42b0d5');
   });
 });
 

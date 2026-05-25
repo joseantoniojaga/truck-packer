@@ -98,7 +98,7 @@ function OV({ placed, vk: viewKind, selId, onSel, trailer: TR }) {
 
   return (
     <div style={{ flex: 1, minWidth: "48%" }}>
-      <div style={{ fontSize: 9, color: "#64748B", marginBottom: 2, fontWeight: 600, textAlign: "center" }}>
+      <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginBottom: 2, fontWeight: 600, textAlign: "center" }}>
         {labels[viewKind]}
       </div>
       <div style={{

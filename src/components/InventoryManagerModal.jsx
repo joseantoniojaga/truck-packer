@@ -23,10 +23,8 @@ const btn = {
   cursor: "pointer",
   fontWeight: 600,
   padding: "4px 8px",
-  fontSize: 10,
+  fontSize: "var(--text-xs)",
 };
-
-const btnFull = { ...btn, padding: "8px", fontSize: 11, width: "100%" };
 
 export default function InventoryManagerModal({
   open, onClose,
@@ -180,12 +178,12 @@ export default function InventoryManagerModal({
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+                  fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-primary)",
                   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                 }}>
                   {inv.name}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2, fontFeatureSettings: "'tnum'" }}>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginTop: 2, fontFeatureSettings: "'tnum'" }}>
                   {inv.items.length} {inv.items.length === 1 ? "tipo" : "tipos"} · {totalUnits} {totalUnits === 1 ? "mueble" : "muebles"}
                 </div>
               </div>
@@ -232,14 +230,14 @@ export default function InventoryManagerModal({
           className="inv-footer-btn"
           style={{ color: "var(--success)" }}
         >
-          <Plus size={18}/>Crear vacío
+          <Plus size={18} strokeWidth={2}/><span>Crear vacío</span>
         </button>
         <button
           onClick={() => setPromptState({ kind: 'saveAsNew' })}
           className="inv-footer-btn"
           style={{ color: "var(--primary)" }}
         >
-          <Save size={18}/>Guardar como
+          <Save size={18} strokeWidth={2}/><span>Guardar como</span>
         </button>
         <div aria-hidden style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
         <button
@@ -250,8 +248,8 @@ export default function InventoryManagerModal({
           title="Reemplaza los items del inventario activo con los actuales"
         >
           {savedFlash
-            ? <><Check size={18}/>Guardado</>
-            : <><Save size={18}/>Sobrescribir</>}
+            ? <><Check size={18} strokeWidth={2}/><span>Guardado</span></>
+            : <><Save size={18} strokeWidth={2}/><span>Sobrescribir</span></>}
         </button>
       </div>
 
