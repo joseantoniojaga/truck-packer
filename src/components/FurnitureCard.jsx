@@ -124,8 +124,8 @@ export default function FurnitureCard({
           background: "var(--bg-subtle)",
           borderLeft: "1px solid var(--border)",
           borderRight: "1px solid var(--border)",
-          padding: "8px 12px",
-          minWidth: 60,
+          padding: "8px 14px",
+          minWidth: 64,
           display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 2,
         }}>
           <input

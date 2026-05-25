@@ -14,12 +14,38 @@ function getThemeBackground() {
   return (computed.getPropertyValue("--bg-subtle").trim() || "#EEF2F6");
 }
 
+// Computa la posición de la cámara para los modos fijos. El tráiler está
+// centrado en (largo/2, alto/2, ancho/2). Distancia: 1.5× la dim más grande.
+function fixedCameraPose(mode, TR) {
+  const cx = TR.largo / 2;
+  const cy = TR.alto / 2;
+  const cz = TR.ancho / 2;
+  const dist = Math.max(TR.largo, TR.alto, TR.ancho) * 1.5;
+  if (mode === 'front') {
+    // Mirando desde fuera del tráiler hacia la cara delantera (X bajo).
+    return { pos: [-dist, cy, cz], target: [cx, cy, cz] };
+  }
+  if (mode === 'side') {
+    // Lateral derecho.
+    return { pos: [cx, cy, cz + dist], target: [cx, cy, cz] };
+  }
+  if (mode === 'top') {
+    // Picada cenital.
+    return { pos: [cx, cy + dist, cz], target: [cx, cy, cz] };
+  }
+  return null;
+}
+
 // TR llega como prop `trailer`; lo aliaseamos a TR para mantener consistencia
 // con el resto del proyecto (constantes geométricas usan TR.largo/ancho/alto).
-function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep, trailer: TR }) {
+function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep, trailer: TR, cameraMode = 'free' }) {
   const mountRef = useRef(null);
   const orbitState = stRef;
   const threeRef = useRef({ scene: null, camera: null, renderer: null, animationFrameId: null });
+  // Ref con el modo de cámara más reciente — leído por los handlers (que viven
+  // dentro del useEffect inicial y de otra forma capturarían un valor viejo).
+  const cameraModeRef = useRef(cameraMode);
+  cameraModeRef.current = cameraMode;
 
   useEffect(() => {
     const mountElement = mountRef.current;
@@ -71,6 +97,13 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     const centerZ = TR.ancho / 2;
 
     const updateCamera = () => {
+      if (cameraModeRef.current !== 'free') {
+        // Modo fijo: la posición se setea via useEffect aparte. Solo aseguramos
+        // que la cámara mire al centro en cada frame por si algo la mueve.
+        const pose = fixedCameraPose(cameraModeRef.current, TR);
+        if (pose) camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+        return;
+      }
       const orbit = orbitState.current;
       camera.position.set(
         centerX + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
@@ -91,11 +124,13 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     const canvas = renderer.domElement;
 
     const onPointerDown = (x, y) => {
+      if (cameraModeRef.current !== 'free') return;
       orbitState.current.dragging = true;
       orbitState.current.lastX = x;
       orbitState.current.lastY = y;
     };
     const onPointerMove = (x, y) => {
+      if (cameraModeRef.current !== 'free') return;
       if (!orbitState.current.dragging) return;
       orbitState.current.theta -= (x - orbitState.current.lastX) * 0.008;
       orbitState.current.phi = Math.max(
@@ -127,6 +162,7 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     }, { passive: false });
     canvas.addEventListener("touchend", onPointerUp);
     canvas.addEventListener("wheel", e => {
+      if (cameraModeRef.current !== 'free') return;
       orbitState.current.radius = Math.max(
         400,
         Math.min(4000, orbitState.current.radius + e.deltaY * 2)
@@ -167,6 +203,19 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
       if (mountElement.contains(renderer.domElement)) mountElement.removeChild(renderer.domElement);
     };
   }, []);
+
+  // Cuando cambia cameraMode, recolocar la cámara en su posición fija (o
+  // dejarla bajo control de orbitState si vuelve a 'free').
+  useEffect(() => {
+    const { camera } = threeRef.current;
+    if (!camera) return;
+    const pose = fixedCameraPose(cameraMode, TR);
+    if (pose) {
+      camera.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
+      camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+    }
+    // En modo 'free' no tocamos nada — el animate loop lee orbitState.
+  }, [cameraMode, TR.largo, TR.alto, TR.ancho]);
 
   useEffect(() => {
     const { scene } = threeRef.current;

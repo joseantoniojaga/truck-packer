@@ -2,12 +2,14 @@
 //
 // Props (todos en cm³ excepto los counts):
 //   placedCount      - número de items colocados
-//   totalRequested   - cantidad pedida (load total)  [no se muestra ahora, reservado]
+//   totalRequested   - cantidad pedida (load total)  [reservado, no usado ahora]
+//   totalInventory   - suma del inv de TODOS los muebles del inventario activo
+//                      (lo que mostramos: "X de TOTAL_INVENTARIO")
 //   placedVolume     - volumen ocupado en cm³
 //   totalVolume      - volumen total del tráiler en cm³
 //   formatVolume     - función que convierte cm³ a string legible (e.g. "102.52 m³")
 export default function CapacityCard({
-  placedCount, totalRequested, placedVolume, totalVolume, formatVolume,
+  placedCount, totalRequested, totalInventory, placedVolume, totalVolume, formatVolume,
 }) {
   const percent = totalVolume > 0 ? Math.min(100, (placedVolume / totalVolume) * 100) : 0;
 
@@ -75,8 +77,8 @@ export default function CapacityCard({
         </span>
       </div>
 
-      {/* Línea pequeña con conteo de muebles */}
-      {typeof placedCount === "number" && typeof totalRequested === "number" && totalRequested > 0 && (
+      {/* Línea pequeña con conteo de muebles sobre el TOTAL del inventario */}
+      {typeof placedCount === "number" && typeof totalInventory === "number" && totalInventory > 0 && (
         <div style={{
           marginTop: 6,
           fontSize: "var(--text-xs)",
@@ -84,7 +86,7 @@ export default function CapacityCard({
           fontWeight: 500,
           fontFeatureSettings: "'tnum'",
         }}>
-          {placedCount} de {totalRequested} muebles colocados
+          {placedCount} de {totalInventory} muebles colocados
         </div>
       )}
 

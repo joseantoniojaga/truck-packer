@@ -29,6 +29,7 @@ const baseBtn = {
 export default function FurnitureEditorModal({
   open, onClose, onSave, onDelete,
   initialFurniture, existingFurniture = [], trailerVolume,
+  hidden = false,
 }) {
   const isEdit = !!initialFurniture;
 
@@ -125,6 +126,7 @@ export default function FurnitureEditorModal({
       title={<span style={{display:'inline-flex',alignItems:'center',gap:8}}><TitleIcon size={20}/>{titleText}</span>}
       titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}
       maxWidth={500}
+      hidden={hidden}
     >
       {isEdit && (
         <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", padding: "8px 10px", background: "var(--bg-subtle)", borderRadius: "var(--radius-sm)", marginBottom: 16, lineHeight: 1.4 }}>

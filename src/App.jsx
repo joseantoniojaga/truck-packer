@@ -395,6 +395,7 @@ export default function App(){
         initialFurniture={editingFurniture}
         existingFurniture={items}
         trailerVolume={TV}
+        hidden={!!furnitureToDelete}
       />
 
       {/* CONFIRM: borrar mueble custom */}
@@ -532,10 +533,28 @@ export default function App(){
             <CapacityCard
               placedCount={placed.length}
               totalRequested={tLoad}
+              totalInventory={items.reduce((s,i)=>s+(i.inv||0),0)}
               placedVolume={volL}
               totalVolume={TV}
               formatVolume={fmtV}
             />
+
+            {/* Texto helper cuando no hay nada colocado — centrado absolute */}
+            {tLoad===0 && (
+              <div style={{
+                position: "absolute",
+                top: "50%", left: "50%",
+                transform: "translate(-50%, -50%)",
+                color: "var(--text-tertiary)",
+                fontSize: "var(--text-md)",
+                fontWeight: 500,
+                pointerEvents: "none",
+                zIndex: 5,
+                textAlign: "center",
+              }}>
+                Usa + o una estrategia
+              </div>
+            )}
 
             {/* Action bar flotante abajo-centro */}
             <ActionBar
@@ -550,24 +569,25 @@ export default function App(){
             />
 
             {/* Contenido del visor */}
-            <div className="viewer-content" style={{padding:viewMode==="all"?"140px 16px 16px":(viewMode!=="3d"?"160px 320px 24px 24px":0),overflowY:viewMode==="all"?"auto":"hidden"}}>
-              {tLoad===0 ? (
-                <div style={{textAlign:"center",color:"var(--text-tertiary)",fontSize:13,padding:"40px"}}>
-                  Usa + o una estrategia
-                </div>
-              ) : viewMode==="3d" ? (
-                <div style={{width:"100%",height:"100%"}}>
-                  <Viewer3D placed={simMode?simSequence.map(s=>s.item):placed} selId={selId} stRef={stRef} onZoomIn={onZoomIn} onZoomOut={onZoomOut} simMode={simMode} simStep={simStep} trailer={TR}/>
-                </div>
-              ) : viewMode==="all" ? (
-                <div style={{display:"flex",flexWrap:"wrap",gap:8,width:"100%",alignSelf:"flex-start"}}>
-                  {["top","bottom","right","left","front","back"].map(vk=>(
-                    <OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
-                  ))}
-                </div>
+            <div className="viewer-content" style={{padding:viewMode==="all"?"140px 16px 16px":0,overflowY:viewMode==="all"?"auto":"hidden"}}>
+              {viewMode==="all" ? (
+                tLoad===0 ? null : (
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,width:"100%",alignSelf:"flex-start"}}>
+                    {["top","bottom","right","left","front","back"].map(vk=>(
+                      <OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
+                    ))}
+                  </div>
+                )
               ) : (
-                <div style={{width:"100%",maxWidth:"100%",maxHeight:"60vh"}}>
-                  <OV placed={placed} vk={viewMode} selId={selId} onSel={setSelId} trailer={TR}/>
+                <div style={{width:"100%",height:"100%"}}>
+                  <Viewer3D
+                    placed={simMode?simSequence.map(s=>s.item):placed}
+                    selId={selId} stRef={stRef}
+                    onZoomIn={onZoomIn} onZoomOut={onZoomOut}
+                    simMode={simMode} simStep={simStep}
+                    trailer={TR}
+                    cameraMode={viewMode==="3d" ? "free" : viewMode==="front" ? "front" : viewMode==="right" ? "side" : "top"}
+                  />
                 </div>
               )}
             </div>

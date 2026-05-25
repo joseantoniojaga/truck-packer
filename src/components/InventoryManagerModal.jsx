@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Modal from './Modal.jsx';
 import PromptModal from './PromptModal.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
@@ -138,14 +139,22 @@ export default function InventoryManagerModal({
     return null;
   })();
 
+  // Cuando hay un sub-modal abierto, ocultar el padre para no superponer
+  // contenido. Los sub-modales se portalean a document.body para que la
+  // ocultación del padre no los afecte.
+  const hasChildModal = promptConfig !== null || !!confirmDeleteInv;
+
   return (
+    <>
     <Modal
       open={open}
       onClose={onClose}
-      title={<span style={{display:'inline-flex',alignItems:'center',gap:6}}><FolderOpen size={16}/>Mis inventarios</span>}
+      title={<span style={{display:'inline-flex',alignItems:'center',gap:8}}><FolderOpen size={20}/>Mis inventarios</span>}
       titleColor={"var(--primary)"}
       accentColor={alpha('--primary', 27)}
       maxWidth={420}
+      hidden={hasChildModal}
+      showClose
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 320, overflowY: "auto" }}>
         {inventories.map(inv => {
@@ -246,33 +255,41 @@ export default function InventoryManagerModal({
         </button>
       </div>
 
-      {/* Sub-modal: PromptModal (crear vacío / snapshot / renombrar) */}
-      {promptConfig && (
-        <PromptModal
-          open
-          title={promptConfig.title}
-          label={promptConfig.label}
-          description={promptConfig.description}
-          placeholder={promptConfig.placeholder}
-          initialValue={promptConfig.initialValue}
-          submitLabel={promptConfig.submitLabel}
-          validate={promptConfig.validate}
-          onSubmit={submitPrompt}
-          onCancel={() => setPromptState(null)}
-        />
-      )}
+    </Modal>
 
-      {/* Sub-modal: ConfirmModal (borrar inventario) */}
+    {/* Sub-modales: portales a document.body para que la ocultación del
+        Modal padre (hidden=true) no los afecte. */}
+    {promptConfig && createPortal(
+      <PromptModal
+        open
+        nested={false}
+        title={promptConfig.title}
+        label={promptConfig.label}
+        description={promptConfig.description}
+        placeholder={promptConfig.placeholder}
+        initialValue={promptConfig.initialValue}
+        submitLabel={promptConfig.submitLabel}
+        validate={promptConfig.validate}
+        onSubmit={submitPrompt}
+        onCancel={() => setPromptState(null)}
+      />,
+      document.body
+    )}
+
+    {confirmDeleteInv && createPortal(
       <ConfirmModal
-        open={!!confirmDeleteInv}
+        open
+        nested={false}
         variant="danger"
         title="Borrar inventario"
-        message={confirmDeleteInv ? `¿Borrar "${confirmDeleteInv.name}"? Esta acción no se puede deshacer.` : ''}
+        message={`¿Borrar "${confirmDeleteInv.name}"? Esta acción no se puede deshacer.`}
         confirmLabel="Borrar"
         cancelLabel="Cancelar"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmDeleteInv(null)}
-      />
-    </Modal>
+      />,
+      document.body
+    )}
+    </>
   );
 }
