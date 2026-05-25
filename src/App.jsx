@@ -8,6 +8,7 @@ import Modal from './components/Modal.jsx';
 import InventoryManagerModal from './components/InventoryManagerModal.jsx';
 import FurnitureEditorModal from './components/FurnitureEditorModal.jsx';
 import Viewer3D from './components/Viewer3D.jsx';
+import EmptyViewerState from './components/EmptyViewerState.jsx';
 import OV from './components/OrthoView.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { alpha } from './styles/util.js';
@@ -539,23 +540,6 @@ export default function App(){
               formatVolume={fmtV}
             />
 
-            {/* Texto helper cuando no hay nada colocado — centrado absolute */}
-            {tLoad===0 && (
-              <div style={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                color: "var(--text-tertiary)",
-                fontSize: "var(--text-md)",
-                fontWeight: 500,
-                pointerEvents: "none",
-                zIndex: 5,
-                textAlign: "center",
-              }}>
-                Usa + o una estrategia
-              </div>
-            )}
-
             {/* Action bar flotante abajo-centro */}
             <ActionBar
               canReorganize={placed.length>0}
@@ -580,14 +564,18 @@ export default function App(){
                 )
               ) : (
                 <div style={{width:"100%",height:"100%"}}>
-                  <Viewer3D
-                    placed={simMode?simSequence.map(s=>s.item):placed}
-                    selId={selId} stRef={stRef}
-                    onZoomIn={onZoomIn} onZoomOut={onZoomOut}
-                    simMode={simMode} simStep={simStep}
-                    trailer={TR}
-                    cameraMode={viewMode==="3d" ? "free" : viewMode==="front" ? "front" : viewMode==="right" ? "side" : "top"}
-                  />
+                  {placed.length===0 ? (
+                    <EmptyViewerState/>
+                  ) : (
+                    <Viewer3D
+                      placed={simMode?simSequence.map(s=>s.item):placed}
+                      selId={selId} stRef={stRef}
+                      onZoomIn={onZoomIn} onZoomOut={onZoomOut}
+                      simMode={simMode} simStep={simStep}
+                      trailer={TR}
+                      cameraMode={viewMode==="3d" ? "free" : viewMode==="front" ? "front" : viewMode==="right" ? "side" : "top"}
+                    />
+                  )}
                 </div>
               )}
             </div>

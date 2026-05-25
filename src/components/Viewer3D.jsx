@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { COLORS } from "../constants.js";
+import { Plus, Minus } from "lucide-react";
 
 // Lee el color de fondo apropiado para la escena según el tema actual.
 // Resuelve la CSS variable (no se puede pasar `var(--x)` directo a THREE).
@@ -258,28 +258,43 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     });
   }, [placed, selId, simMode, simStep]);
 
-  const zoomButtonStyle = {
-    width: 32,
-    height: 32,
-    borderRadius: "50%",
-    background: COLORS.card,
-    border: `1px solid ${COLORS.border}`,
-    color: "#fff",
-    fontSize: 18,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-    lineHeight: 1,
-  };
-
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
       <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
-      <div style={{ position: "absolute", bottom: 16, right: 16, display: "flex", gap: 6, zIndex: 15 }}>
-        <button onClick={onZoomIn} style={zoomButtonStyle}>+</button>
-        <button onClick={onZoomOut} style={zoomButtonStyle}>−</button>
+      {/* Mini-ActionBar de zoom en la esquina inferior derecha, mismo
+          tratamiento visual que el ActionBar principal. */}
+      <div style={{
+        position: "absolute",
+        bottom: 16, right: 16,
+        zIndex: 15,
+        display: "inline-flex",
+        gap: 4,
+        padding: 6,
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)",
+        boxShadow: "var(--shadow-md)",
+      }}>
+        <button
+          type="button"
+          className="action-btn action-btn--secondary"
+          onClick={onZoomIn}
+          aria-label="Acercar"
+          title="Acercar"
+          style={{ padding: "10px 14px" }}
+        >
+          <Plus size={16} />
+        </button>
+        <button
+          type="button"
+          className="action-btn action-btn--secondary"
+          onClick={onZoomOut}
+          aria-label="Alejar"
+          title="Alejar"
+          style={{ padding: "10px 14px" }}
+        >
+          <Minus size={16} />
+        </button>
       </div>
     </div>
   );

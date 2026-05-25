@@ -129,10 +129,12 @@ export default function ActionBar({
             }}
           >
             <div style={{
-              fontSize: 11, fontWeight: 600, letterSpacing: "0.5px",
-              color: "var(--text-tertiary)", textTransform: "uppercase",
-              padding: "8px 12px 4px",
+              fontSize: "var(--text-lg)", fontWeight: 700,
+              color: "var(--text-primary)",
+              padding: "10px 12px 12px",
+              display: "flex", alignItems: "center", gap: 8,
             }}>
+              <Sparkles size={20} style={{ color: "var(--accent)" }} />
               Aplicar estrategia
             </div>
             {strategies.map(s => {

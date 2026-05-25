@@ -287,7 +287,7 @@ input, textarea, select {
 }
 .inv-footer-btn {
   flex: 1;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;

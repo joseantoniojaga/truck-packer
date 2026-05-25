@@ -34,8 +34,9 @@ export default function FurnitureCard({
         position: "relative",
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        padding: "14px 16px",
+        gap: 14,
+        padding: "16px 18px",
+        minHeight: 76,
         background: "var(--surface)",
         border: `1px solid ${selected ? f.color : "var(--border)"}`,
         borderRadius: "var(--radius-md)",
@@ -57,7 +58,7 @@ export default function FurnitureCard({
 
       {/* Caja icono */}
       <div style={{
-        width: 40, height: 40,
+        width: 44, height: 44,
         background: "var(--bg-subtle)",
         borderRadius: "var(--radius-sm)",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -65,13 +66,13 @@ export default function FurnitureCard({
         flexShrink: 0,
         marginLeft: 4, // separación visual de la barra lateral
       }}>
-        <Box size={18} />
+        <Box size={20} />
       </div>
 
       {/* Nombre + dimensiones */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-primary)",
+          fontSize: "var(--text-md)", fontWeight: 600, color: "var(--text-primary)",
           display: "flex", alignItems: "center", gap: 6,
         }}>
           <span style={{
@@ -82,13 +83,13 @@ export default function FurnitureCard({
           </span>
           {isComplete && (
             <Check
-              size={14}
+              size={16}
               style={{ color: "var(--success)", flexShrink: 0 }}
               aria-label="Completo"
             />
           )}
         </div>
-        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginTop: 2 }}>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginTop: 4 }}>
           {f.ancho} × {f.alto} × {f.fondo} cm
         </div>
       </div>
@@ -99,6 +100,7 @@ export default function FurnitureCard({
         style={{
           display: "inline-flex",
           alignItems: "stretch",
+          height: 44,
           border: "1px solid var(--border)",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
@@ -116,17 +118,18 @@ export default function FurnitureCard({
           onTouchEnd={decHold.stop}
           disabled={cantDecrement}
           aria-label="Menos"
+          style={{ padding: "10px 14px" }}
         >
-          <Minus size={14} />
+          <Minus size={16} />
         </button>
 
         <div style={{
           background: "var(--bg-subtle)",
           borderLeft: "1px solid var(--border)",
           borderRight: "1px solid var(--border)",
-          padding: "8px 14px",
-          minWidth: 64,
-          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 2,
+          padding: "10px 16px",
+          minWidth: 72,
+          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
         }}>
           <input
             type="number"
@@ -143,18 +146,18 @@ export default function FurnitureCard({
             onFocus={e => e.target.select()}
             aria-label={editMode ? "Inventario" : "Cargadas"}
             style={{
-              width: 36,
+              width: 32,
               border: "none", background: "transparent", outline: "none",
               padding: 0, margin: 0,
               textAlign: "center",
               fontWeight: 600,
               color: "var(--text-primary)",
               fontFeatureSettings: "'tnum'",
-              fontSize: "var(--text-base)",
+              fontSize: "var(--text-md)",
             }}
           />
           {!editMode && (
-            <span style={{ color: "var(--text-tertiary)", fontWeight: 500, fontSize: 14 }}>
+            <span style={{ color: "var(--text-tertiary)", fontWeight: 500, fontSize: "var(--text-sm)" }}>
               /{f.inv}
             </span>
           )}
@@ -170,8 +173,9 @@ export default function FurnitureCard({
           onTouchEnd={incHold.stop}
           disabled={cantIncrement}
           aria-label="Más"
+          style={{ padding: "10px 14px" }}
         >
-          <Plus size={14} />
+          <Plus size={16} />
         </button>
       </div>
 
@@ -182,9 +186,9 @@ export default function FurnitureCard({
         onClick={e => { e.stopPropagation(); onEdit(); }}
         title="Editar mueble"
         aria-label="Editar mueble"
-        style={{ width: 32, height: 32, flexShrink: 0 }}
+        style={{ width: 40, height: 40, flexShrink: 0 }}
       >
-        <Edit2 size={14} />
+        <Edit2 size={16} />
       </button>
     </div>
   );
