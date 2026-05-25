@@ -110,28 +110,27 @@ describe('App: persistencia entre montajes', () => {
 
 describe('App: flujo de inventario vacío', () => {
   it('crear inventario vacío "Test" → placeholder y lista vacía', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Test');
     render(<App />);
 
     fireEvent.click(screen.getByText(/Inventarios/));
     fireEvent.click(screen.getByText(/Crear inventario nuevo/));
+    // PromptModal abierto: escribir y submit
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Test' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
 
-    // Tras crear y activar, ya no hay muebles base
     expect(screen.queryByText('Buró Hampton')).toBeNull();
-    // Aparece el placeholder
     expect(screen.getByText(/Este inventario está vacío/)).toBeInTheDocument();
-    // Hay 2 inventarios en storage (base + Test) y Test es activo
     const after = loadInventories();
     expect(after).toHaveLength(2);
     expect(after.find(i => i.name === 'Test')).toBeDefined();
   });
 
   it('volver al inventario base desde el manager: muebles reaparecen', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Test');
     render(<App />);
-    // Crear vacío Test (queda activo)
     fireEvent.click(screen.getByText(/Inventarios/));
     fireEvent.click(screen.getByText(/Crear inventario nuevo/));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Test' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
     expect(screen.queryByText('Buró Hampton')).toBeNull();
 
     // Abrir manager y cargar el Inventario base
@@ -210,32 +209,32 @@ describe('App: editar y borrar mueble custom', () => {
   });
 
   it('borrar mueble: confirm true → desaparece de la lista', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<App />);
 
     const sillaRow = screen.getByText('Silla X').closest('div').parentElement.parentElement;
     fireEvent.click(within(sillaRow).getByTitle('Editar mueble'));
 
-    const modal = modalCardByTitle('Editar mueble');
-    fireEvent.click(within(modal).getByText(/Borrar mueble/));
+    const editorModal = modalCardByTitle('Editar mueble');
+    fireEvent.click(within(editorModal).getByText(/Borrar mueble/));
+    // ConfirmModal abre; click "Borrar" lo confirma
+    fireEvent.click(screen.getByRole('button', { name: 'Borrar' }));
 
-    expect(window.confirm).toHaveBeenCalled();
     expect(screen.queryByText('Silla X')).toBeNull();
-    // Persistido: ya no está en storage
     expect(loadInventories()[0].items.some(i => i.name === 'Silla X')).toBe(false);
   });
 
-  it('borrar mueble: confirm false → permanece', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('borrar mueble: confirm cancelado → permanece', () => {
     render(<App />);
 
     const sillaRow = screen.getByText('Silla X').closest('div').parentElement.parentElement;
     fireEvent.click(within(sillaRow).getByTitle('Editar mueble'));
 
-    const modal = modalCardByTitle('Editar mueble');
-    fireEvent.click(within(modal).getByText(/Borrar mueble/));
+    const editorModal = modalCardByTitle('Editar mueble');
+    fireEvent.click(within(editorModal).getByText(/Borrar mueble/));
+    // ConfirmModal abre. Cancelar el confirm (el ÚLTIMO botón Cancelar es el del ConfirmModal).
+    const cancelButtons = screen.getAllByRole('button', { name: 'Cancelar' });
+    fireEvent.click(cancelButtons[cancelButtons.length - 1]);
 
-    expect(window.confirm).toHaveBeenCalled();
     expect(screen.getByText('Silla X')).toBeInTheDocument();
   });
 });

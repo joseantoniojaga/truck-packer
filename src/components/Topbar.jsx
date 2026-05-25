@@ -14,16 +14,19 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
     <header
       style={{
         position: "sticky",
-        top: 0,
+        top: 12,
         zIndex: 50,
         background: "var(--surface)",
-        borderBottom: "1px solid var(--border)",
-        padding: "12px 24px",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-lg)",
+        padding: "12px 20px",
+        marginBottom: 16,
+        boxShadow: "var(--shadow-sm)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        minHeight: 64,
+        minHeight: 60,
       }}
     >
       {/* Izquierda: logo + nombre */}

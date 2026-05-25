@@ -87,12 +87,37 @@ input, textarea, select {
   animation: spin 1s linear infinite;
 }
 
+/* Scrollbar custom global — delgado y discreto, coherente con tokens */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
 /* Furniture card (lista de muebles) */
 .furniture-card {
-  transition: box-shadow 150ms ease, border-color 150ms ease;
+  /* overflow:hidden hace que el strip de color absoluto se recorte
+     limpiamente dentro del border-radius del card */
+  overflow: hidden;
+  transition: box-shadow 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 .furniture-card:hover {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* Stepper integrado */
@@ -165,7 +190,7 @@ input, textarea, select {
   position: absolute;
   top: 16px;
   left: 16px;
-  z-index: 10;
+  z-index: 30;
   display: inline-flex;
   gap: 4px;
   padding: 4px;
@@ -230,6 +255,9 @@ input, textarea, select {
 .action-btn--open {
   background: var(--surface-hover);
 }
+.action-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
 
 /* Opción dentro del dropdown de estrategias */
 .strat-option {
@@ -241,10 +269,12 @@ input, textarea, select {
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: background-color 120ms ease;
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 .strat-option:hover:not(:disabled) {
-  background: var(--surface-hover);
+  background: var(--bg-subtle);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 .strat-option:disabled {
   cursor: default;

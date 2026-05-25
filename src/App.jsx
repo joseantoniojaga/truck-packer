@@ -15,6 +15,7 @@ import Topbar from './components/Topbar.jsx';
 import FurnitureCard from './components/FurnitureCard.jsx';
 import CapacityCard from './components/CapacityCard.jsx';
 import ActionBar from './components/ActionBar.jsx';
+import ConfirmModal from './components/ConfirmModal.jsx';
 import {
   Truck, Box, Package, RotateCcw, Play, Sparkles, X, FolderOpen, Plus, Edit2,
   AlertTriangle, Check, Lightbulb,
@@ -191,13 +192,18 @@ export default function App(){
     persistActiveItems(newItems);
   },[items,persistActiveItems]);
 
-  // Borrar un mueble custom (con confirm). También quita lo ya colocado y persiste.
+  // Estado para el ConfirmModal de borrado de mueble.
+  const [furnitureToDelete,setFurnitureToDelete]=useState(null);
+
+  // Borrar un mueble custom: abre el ConfirmModal. El delete real ocurre tras
+  // confirmar (ver confirmFurnitureDelete).
   const handleFurnitureDelete=useCallback((furniture)=>{
-    const placedCount=placed.filter(p=>p.id===furniture.id).length;
-    const msg=placedCount>0
-      ? `¿Borrar el mueble "${furniture.name}"? También se quitarán los ${placedCount} ya colocados.`
-      : `¿Borrar el mueble "${furniture.name}"?`;
-    if(!window.confirm(msg))return;
+    setFurnitureToDelete(furniture);
+  },[]);
+
+  const confirmFurnitureDelete=useCallback(()=>{
+    const furniture=furnitureToDelete;
+    if(!furniture)return;
     const newItems=items.filter(it=>it.id!==furniture.id);
     const newPlaced=placed.filter(p=>p.id!==furniture.id);
     setItems(newItems);
@@ -205,7 +211,8 @@ export default function App(){
     persistActiveItems(newItems);
     setShowFurnitureEditor(false);
     setEditingFurniture(null);
-  },[items,placed,persistActiveItems]);
+    setFurnitureToDelete(null);
+  },[furnitureToDelete,items,placed,persistActiveItems]);
 
   const setInv=useCallback((id,v)=>{
     const newInv=Math.max(0,v);
@@ -390,6 +397,22 @@ export default function App(){
         trailerVolume={TV}
       />
 
+      {/* CONFIRM: borrar mueble custom */}
+      <ConfirmModal
+        open={!!furnitureToDelete}
+        variant="danger"
+        title="Borrar mueble"
+        message={furnitureToDelete
+          ? (placed.filter(p=>p.id===furnitureToDelete.id).length>0
+              ? `¿Borrar el mueble "${furnitureToDelete.name}"? También se quitarán los ${placed.filter(p=>p.id===furnitureToDelete.id).length} ya colocados.`
+              : `¿Borrar el mueble "${furnitureToDelete.name}"?`)
+          : ''}
+        confirmLabel="Borrar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmFurnitureDelete}
+        onCancel={()=>setFurnitureToDelete(null)}
+      />
+
       {/* ── TOPBAR Cargo Trust ── */}
       <Topbar
         inventoryName={activeInventoryName}
@@ -484,7 +507,7 @@ export default function App(){
                 { key: "3d",    label: "3D" },
                 { key: "front", label: "Frente" },
                 { key: "right", label: "Lado" },
-                { key: "top",   label: "Top" },
+                { key: "top",   label: "Arriba" },
               ].map(t => (
                 <button
                   key={t.key}

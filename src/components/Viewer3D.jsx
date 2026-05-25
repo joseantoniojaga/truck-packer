@@ -2,6 +2,18 @@ import { useRef, useEffect } from "react";
 import * as THREE from "three";
 import { COLORS } from "../constants.js";
 
+// Lee el color de fondo apropiado para la escena según el tema actual.
+// Resuelve la CSS variable (no se puede pasar `var(--x)` directo a THREE).
+function getThemeBackground() {
+  if (typeof document === "undefined") return "#0A1420";
+  const theme = document.documentElement.getAttribute("data-theme");
+  const computed = getComputedStyle(document.documentElement);
+  if (theme === "dark") {
+    return (computed.getPropertyValue("--bg-base").trim() || "#0A1420");
+  }
+  return (computed.getPropertyValue("--bg-subtle").trim() || "#EEF2F6");
+}
+
 // TR llega como prop `trailer`; lo aliaseamos a TR para mantener consistencia
 // con el resto del proyecto (constantes geométricas usan TR.largo/ancho/alto).
 function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep, trailer: TR }) {
@@ -12,17 +24,20 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
   useEffect(() => {
     const mountElement = mountRef.current;
     if (!mountElement) return;
-    const width = mountElement.clientWidth;
-    const height = Math.round(width * 0.65);
+    const width = mountElement.clientWidth || 800;
+    const height = mountElement.clientHeight || Math.round(width * 0.65);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#080E1A");
+    scene.background = new THREE.Color(getThemeBackground());
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
     mountElement.appendChild(renderer.domElement);
     threeRef.current = { scene, camera, renderer, animationFrameId: null };
 
@@ -118,8 +133,36 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
       );
     }, { passive: true });
 
+    // ResizeObserver: el canvas sigue al contenedor cuando cambia de tamaño.
+    let resizeObs = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObs = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width;
+          const h = entry.contentRect.height;
+          if (w > 0 && h > 0) {
+            renderer.setSize(w, h, false);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+          }
+        }
+      });
+      resizeObs.observe(mountElement);
+    }
+
+    // MutationObserver: el background sigue al toggle de tema (data-theme).
+    let themeObs = null;
+    if (typeof MutationObserver !== "undefined") {
+      themeObs = new MutationObserver(() => {
+        scene.background = new THREE.Color(getThemeBackground());
+      });
+      themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    }
+
     return () => {
       cancelAnimationFrame(threeRef.current.animationFrameId);
+      if (resizeObs) resizeObs.disconnect();
+      if (themeObs) themeObs.disconnect();
       renderer.dispose();
       if (mountElement.contains(renderer.domElement)) mountElement.removeChild(renderer.domElement);
     };
@@ -183,9 +226,9 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
   };
 
   return (
-    <div style={{ position: "relative", width: "100%", borderRadius: 6, overflow: "hidden" }}>
-      <div ref={mountRef} style={{ width: "100%" }} />
-      <div style={{ position: "absolute", bottom: 8, right: 8, display: "flex", gap: 6 }}>
+    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+      <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
+      <div style={{ position: "absolute", bottom: 16, right: 16, display: "flex", gap: 6, zIndex: 15 }}>
         <button onClick={onZoomIn} style={zoomButtonStyle}>+</button>
         <button onClick={onZoomOut} style={zoomButtonStyle}>−</button>
       </div>

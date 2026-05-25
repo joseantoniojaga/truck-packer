@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
+import PromptModal from './PromptModal.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import { alpha } from '../styles/util.js';
 import { FolderOpen, Edit2, Trash2, Plus, Save, Check } from 'lucide-react';
 import {
@@ -32,12 +34,19 @@ export default function InventoryManagerModal({
   items, setItems, setPlaced,
 }) {
   const [savedFlash, setSavedFlash] = useState(false);
+  // Sub-modales: prompt para crear/snapshot/rename, confirm para borrar.
+  const [promptState, setPromptState] = useState(null); // { kind, invId? }
+  const [confirmDeleteInv, setConfirmDeleteInv] = useState(null);
 
   // Hace activo un inventario tanto en React state como en localStorage.
   const activate = (id) => {
     persistActiveId(id);
     setActiveInventoryIdState(id);
   };
+
+  // Detecta nombre duplicado (case-insensitive, ignora un inv específico).
+  const isDuplicateName = (name, ignoreId = null) =>
+    inventories.some(x => x.id !== ignoreId && x.name.toLowerCase() === name.toLowerCase());
 
   const handleLoad = (id) => {
     if (id === activeInventoryId) return;
@@ -49,22 +58,25 @@ export default function InventoryManagerModal({
     onClose();
   };
 
-  const handleCreateEmpty = () => {
-    const name = window.prompt('Nombre del nuevo inventario:\n(arranca vacío — vas a agregar muebles después en el Paso 3)');
-    if (!name || !name.trim()) return;
-    const inv = createInventory(name.trim(), []);
-    setInventories(loadInventories());
-    activate(inv.id);
-    setItems([]);
-    setPlaced([]);
-    onClose();
-  };
-
-  const handleSaveAsNew = () => {
-    const name = window.prompt('Nombre del snapshot:\n(guarda el inventario actual como uno nuevo, sin activarlo)');
-    if (!name || !name.trim()) return;
-    createInventory(name.trim(), stripLoad(items));
-    setInventories(loadInventories());
+  const submitPrompt = (value) => {
+    if (!promptState) return;
+    if (promptState.kind === 'createEmpty') {
+      const inv = createInventory(value, []);
+      setInventories(loadInventories());
+      activate(inv.id);
+      setItems([]);
+      setPlaced([]);
+      setPromptState(null);
+      onClose();
+    } else if (promptState.kind === 'saveAsNew') {
+      createInventory(value, stripLoad(items));
+      setInventories(loadInventories());
+      setPromptState(null);
+    } else if (promptState.kind === 'rename') {
+      updateInventory(promptState.invId, { name: value });
+      setInventories(loadInventories());
+      setPromptState(null);
+    }
   };
 
   const handleOverwriteActive = () => {
@@ -75,23 +87,9 @@ export default function InventoryManagerModal({
     setTimeout(() => setSavedFlash(false), 1500);
   };
 
-  const handleRename = (id) => {
-    const inv = inventories.find(x => x.id === id);
-    if (!inv) return;
-    const newName = window.prompt('Nuevo nombre:', inv.name);
-    if (!newName || !newName.trim() || newName.trim() === inv.name) return;
-    updateInventory(id, { name: newName.trim() });
-    setInventories(loadInventories());
-  };
-
-  const handleDelete = (id) => {
-    if (inventories.length <= 1) {
-      window.alert('No puedes borrar el único inventario.');
-      return;
-    }
-    const inv = inventories.find(x => x.id === id);
-    if (!inv) return;
-    if (!window.confirm(`¿Borrar "${inv.name}"? Esta acción no se puede deshacer.`)) return;
+  const confirmDelete = () => {
+    if (!confirmDeleteInv) return;
+    const id = confirmDeleteInv.id;
     deleteInventory(id);
     const remaining = loadInventories();
     setInventories(remaining);
@@ -101,7 +99,44 @@ export default function InventoryManagerModal({
       setItems(next.items.map(it => ({ ...it, load: 0 })));
       setPlaced([]);
     }
+    setConfirmDeleteInv(null);
   };
+
+  // Configuración del PromptModal según el kind activo.
+  const promptConfig = (() => {
+    if (!promptState) return null;
+    if (promptState.kind === 'createEmpty') return {
+      title: 'Nuevo inventario',
+      label: 'Nombre del nuevo inventario',
+      description: 'Arranca vacío — vas a agregar muebles después en el Paso 3.',
+      placeholder: 'Ej. Mudanza Hampton',
+      submitLabel: 'Crear',
+      initialValue: '',
+      validate: (v) => !v ? 'No puede estar vacío' : isDuplicateName(v) ? 'Ya existe un inventario con ese nombre' : null,
+    };
+    if (promptState.kind === 'saveAsNew') return {
+      title: 'Guardar como nuevo',
+      label: 'Nombre del snapshot',
+      description: 'Guarda el inventario actual como uno nuevo, sin activarlo.',
+      placeholder: 'Ej. Backup pre-cambios',
+      submitLabel: 'Guardar',
+      initialValue: '',
+      validate: (v) => !v ? 'No puede estar vacío' : isDuplicateName(v) ? 'Ya existe un inventario con ese nombre' : null,
+    };
+    if (promptState.kind === 'rename') {
+      const inv = inventories.find(x => x.id === promptState.invId);
+      return {
+        title: 'Renombrar inventario',
+        label: 'Nuevo nombre',
+        description: null,
+        placeholder: '',
+        submitLabel: 'Guardar',
+        initialValue: inv?.name || '',
+        validate: (v) => !v ? 'No puede estar vacío' : isDuplicateName(v, promptState.invId) ? 'Ya existe un inventario con ese nombre' : null,
+      };
+    }
+    return null;
+  })();
 
   return (
     <Modal
@@ -141,9 +176,9 @@ export default function InventoryManagerModal({
                 >
                   Cargar
                 </button>
-                <button onClick={() => handleRename(inv.id)} title="Renombrar" aria-label="Renombrar" style={{ ...btn, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center" }}><Edit2 size={12}/></button>
+                <button onClick={() => setPromptState({ kind: 'rename', invId: inv.id })} title="Renombrar" aria-label="Renombrar" style={{ ...btn, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center" }}><Edit2 size={12}/></button>
                 <button
-                  onClick={() => handleDelete(inv.id)}
+                  onClick={() => setConfirmDeleteInv(inv)}
                   disabled={inventories.length <= 1}
                   title={inventories.length <= 1 ? "No puedes borrar el único" : "Borrar"}
                   style={{ ...btn, color: "var(--error)", opacity: inventories.length <= 1 ? 0.3 : 1, cursor: inventories.length <= 1 ? "default" : "pointer" }}
@@ -157,13 +192,13 @@ export default function InventoryManagerModal({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <button onClick={handleCreateEmpty} style={{ ...btnFull, color: "var(--success)", borderColor: alpha('--success', 27) }}>
+        <button onClick={() => setPromptState({ kind: 'createEmpty' })} style={{ ...btnFull, color: "var(--success)", borderColor: alpha('--success', 27) }}>
           <Plus size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Crear inventario nuevo (vacío)
         </button>
         <div style={{ fontSize: 10, color: "var(--text-secondary)", padding: "0 4px", marginTop: -2, lineHeight: 1.4 }}>
           Arranca sin muebles; los agregas después en el Paso 3.
         </div>
-        <button onClick={handleSaveAsNew} style={{ ...btnFull, color: "var(--primary)", borderColor: alpha('--primary', 27) }}>
+        <button onClick={() => setPromptState({ kind: 'saveAsNew' })} style={{ ...btnFull, color: "var(--primary)", borderColor: alpha('--primary', 27) }}>
           <Save size={14} style={{marginRight:6,verticalAlign:'-2px'}}/>Guardar inventario actual como nuevo
         </button>
         <button
@@ -184,6 +219,34 @@ export default function InventoryManagerModal({
       <button onClick={onClose} style={{ ...btnFull, color: "var(--text-secondary)", marginTop: 10 }}>
         Cerrar
       </button>
+
+      {/* Sub-modal: PromptModal (crear vacío / snapshot / renombrar) */}
+      {promptConfig && (
+        <PromptModal
+          open
+          title={promptConfig.title}
+          label={promptConfig.label}
+          description={promptConfig.description}
+          placeholder={promptConfig.placeholder}
+          initialValue={promptConfig.initialValue}
+          submitLabel={promptConfig.submitLabel}
+          validate={promptConfig.validate}
+          onSubmit={submitPrompt}
+          onCancel={() => setPromptState(null)}
+        />
+      )}
+
+      {/* Sub-modal: ConfirmModal (borrar inventario) */}
+      <ConfirmModal
+        open={!!confirmDeleteInv}
+        variant="danger"
+        title="Borrar inventario"
+        message={confirmDeleteInv ? `¿Borrar "${confirmDeleteInv.name}"? Esta acción no se puede deshacer.` : ''}
+        confirmLabel="Borrar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteInv(null)}
+      />
     </Modal>
   );
 }

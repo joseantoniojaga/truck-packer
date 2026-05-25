@@ -88,33 +88,34 @@ describe('InventoryManagerModal — acciones', () => {
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('Click Renombrar con prompt válido: persiste el nuevo nombre', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Renombrado');
+  it('Click Renombrar abre PromptModal; submit persiste el nuevo nombre', () => {
     const invs = [{ id: 'a', name: 'Antiguo', items: [sampleItem()] }];
     saveInventories(invs);
     const { props } = mountModal({ inventories: invs, activeInventoryId: 'a' });
 
     fireEvent.click(screen.getByTitle('Renombrar'));
+    // PromptModal abre con el valor actual; cambio y submit
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Renombrado' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
-    expect(window.prompt).toHaveBeenCalled();
     expect(loadInventories()[0].name).toBe('Renombrado');
     expect(props.setInventories).toHaveBeenCalled();
   });
 
-  it('Click Renombrar con prompt vacío o cancelado: no cambia nada', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue(null);
+  it('Click Renombrar y luego Cancelar: no cambia nada', () => {
     const invs = [{ id: 'a', name: 'Antiguo', items: [sampleItem()] }];
     saveInventories(invs);
     const { props } = mountModal({ inventories: invs, activeInventoryId: 'a' });
 
     fireEvent.click(screen.getByTitle('Renombrar'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(loadInventories()[0].name).toBe('Antiguo');
     expect(props.setInventories).not.toHaveBeenCalled();
   });
 
-  it('Click Borrar con confirm true (2+ inventarios): elimina del storage', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('Click Borrar abre ConfirmModal; confirmar elimina del storage', () => {
     const invs = [
       { id: 'a', name: 'Uno', items: [] },
       { id: 'b', name: 'Dos', items: [] },
@@ -122,11 +123,12 @@ describe('InventoryManagerModal — acciones', () => {
     saveInventories(invs);
     const { props } = mountModal({ inventories: invs, activeInventoryId: 'a' });
 
-    // El primer 🗑️ corresponde al primer inventario (activo). Lo borra.
     const trashButtons = screen.getAllByTitle('Borrar');
     fireEvent.click(trashButtons[0]);
+    // ConfirmModal abre; el último botón "Borrar" en el DOM es el del confirm
+    const borrarButtons = screen.getAllByRole('button', { name: 'Borrar' });
+    fireEvent.click(borrarButtons[borrarButtons.length - 1]);
 
-    expect(window.confirm).toHaveBeenCalled();
     expect(loadInventories()).toHaveLength(1);
     expect(loadInventories()[0].id).toBe('b');
     expect(props.setInventories).toHaveBeenCalled();
@@ -144,16 +146,17 @@ describe('InventoryManagerModal — acciones', () => {
     expect(loadInventories()).toHaveLength(1);
   });
 
-  it('"➕ Crear inventario nuevo (vacío)": prompt válido → crea inv vacío y lo activa', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Test');
+  it('"➕ Crear inventario nuevo (vacío)": PromptModal submit → crea inv vacío y lo activa', () => {
     const invs = [{ id: 'a', name: 'Base', items: [sampleItem()] }];
     saveInventories(invs);
     setActiveInventoryId('a');
     const { props } = mountModal({ inventories: invs, activeInventoryId: 'a' });
 
     fireEvent.click(screen.getByText(/Crear inventario nuevo/));
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Test' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
 
-    expect(window.prompt).toHaveBeenCalled();
     const after = loadInventories();
     expect(after).toHaveLength(2);
     const created = after.find(x => x.name === 'Test');
@@ -166,7 +169,6 @@ describe('InventoryManagerModal — acciones', () => {
   });
 
   it('"💾 Guardar inventario actual como nuevo": crea snapshot SIN activarlo', () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Snapshot 1');
     const invs = [{ id: 'a', name: 'Base', items: [sampleItem()] }];
     saveInventories(invs);
     const currentItems = [sampleItem({ id: 1, name: 'A', load: 5 })];
@@ -175,16 +177,16 @@ describe('InventoryManagerModal — acciones', () => {
     });
 
     fireEvent.click(screen.getByText(/Guardar inventario actual como nuevo/));
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Snapshot 1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
     const after = loadInventories();
     expect(after).toHaveLength(2);
     const snap = after.find(x => x.name === 'Snapshot 1');
     expect(snap.items).toHaveLength(1);
-    // El load NO se persiste
     expect(snap.items[0].load).toBeUndefined();
-    // No se activa: setActiveInventoryIdState no se llama
     expect(props.setActiveInventoryIdState).not.toHaveBeenCalled();
-    // No se cierra el modal automáticamente al guardar como nuevo
     expect(props.onClose).not.toHaveBeenCalled();
   });
 

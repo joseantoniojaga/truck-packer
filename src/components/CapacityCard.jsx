@@ -75,6 +75,19 @@ export default function CapacityCard({
         </span>
       </div>
 
+      {/* Línea pequeña con conteo de muebles */}
+      {typeof placedCount === "number" && typeof totalRequested === "number" && totalRequested > 0 && (
+        <div style={{
+          marginTop: 8,
+          fontSize: 11,
+          color: "var(--text-tertiary)",
+          fontWeight: 500,
+          fontFeatureSettings: "'tnum'",
+        }}>
+          {placedCount} de {totalRequested} muebles colocados
+        </div>
+      )}
+
       {/* Barra de progreso con gradiente azul → cyan → amarillo → rojo */}
       <div
         style={{
