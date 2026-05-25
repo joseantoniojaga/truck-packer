@@ -14,37 +14,59 @@ function getThemeBackground() {
   return (computed.getPropertyValue("--bg-subtle").trim() || "#EEF2F6");
 }
 
-// Computa la posición de la cámara para los modos fijos haciendo un
-// verdadero fit-to-view. El tráiler está centrado en (largo/2, alto/2,
-// ancho/2). Calcula la distancia mínima para que el bbox visible del
-// tráiler en cada modo entre justo en el viewport — tanto verticalmente
-// (limitado por vFov) como horizontalmente (limitado por hFov ≈ vFov · aspect).
-// Esto funciona tanto para tráileres alargados (16×2.47×2.80) como
-// pequeños/cuadrados (2×2×2) sin recortes ni zooms exagerados.
-function fixedCameraPose(mode, TR, aspect = 1) {
+// Configuración de la cámara ortográfica para los modos fijos
+// (Frente / Lado / Arriba). Una proyección ortográfica elimina la distorsión
+// de perspectiva — el tráiler se ve como plano técnico, no como render 3D.
+//
+// Devuelve { pos, target, up, left, right, top, bottom } o null si el modo
+// no es uno de los tres soportados. El frustum se calcula de modo que el
+// bbox visible del tráiler en ese modo entre con un 10% de margen y el
+// aspect del canvas se respeta (sin estirar la imagen).
+function orthoView(mode, TR, aspect) {
   const cx = TR.largo / 2;
   const cy = TR.alto / 2;
   const cz = TR.ancho / 2;
 
-  const vFov = (45 * Math.PI) / 180;
-  const margin = 1.15; // 15% de espacio alrededor del tráiler
-
-  // bbox visible en pantalla (H = horizontal, V = vertical) según el modo.
+  // bbox visible en pantalla (H = horizontal, V = vertical) por modo.
   let bboxH, bboxV;
-  if (mode === 'front')      { bboxH = TR.ancho; bboxV = TR.alto;  }
-  else if (mode === 'side')  { bboxH = TR.largo; bboxV = TR.alto;  }
-  else if (mode === 'top')   { bboxH = TR.ancho; bboxV = TR.largo; }
+  if (mode === "front")      { bboxH = TR.ancho; bboxV = TR.alto;  }
+  else if (mode === "side")  { bboxH = TR.largo; bboxV = TR.alto;  }
+  else if (mode === "top")   { bboxH = TR.ancho; bboxV = TR.largo; }
   else return null;
 
-  // Distancia mínima para que el bbox entre verticalmente (limita el vFov).
-  const distV = (bboxV / 2) / Math.tan(vFov / 2);
-  // Distancia mínima para que entre horizontalmente (hFov efectivo).
-  const distH = (bboxH / 2) / (Math.tan(vFov / 2) * aspect);
-  const dist = Math.max(distV, distH) * margin;
+  const margin = 1.1;
+  const bboxAspect = bboxH / bboxV;
 
-  if (mode === 'front') return { pos: [cx - dist, cy, cz], target: [cx, cy, cz] };
-  if (mode === 'side')  return { pos: [cx, cy, cz + dist], target: [cx, cy, cz] };
-  if (mode === 'top')   return { pos: [cx, cy + dist, cz], target: [cx, cy, cz] };
+  // Si el canvas es más ancho que el bbox, limita por altura y expande H.
+  // Si es más alto/angosto, limita por ancho y expande V. Así no hay
+  // distorsión y queda centrado.
+  let halfH, halfV;
+  if (aspect > bboxAspect) {
+    halfV = (bboxV / 2) * margin;
+    halfH = halfV * aspect;
+  } else {
+    halfH = (bboxH / 2) * margin;
+    halfV = halfH / aspect;
+  }
+
+  // En ortho la distancia no afecta el tamaño en pantalla — solo importa
+  // estar fuera del bbox y dentro del `far`. Usamos 3× la dim más grande.
+  const dist = Math.max(TR.largo, TR.alto, TR.ancho) * 3;
+
+  if (mode === "front") {
+    return { pos: [cx - dist, cy, cz], target: [cx, cy, cz], up: [0, 1, 0],
+             left: -halfH, right: halfH, top: halfV, bottom: -halfV };
+  }
+  if (mode === "side") {
+    return { pos: [cx, cy, cz + dist], target: [cx, cy, cz], up: [0, 1, 0],
+             left: -halfH, right: halfH, top: halfV, bottom: -halfV };
+  }
+  if (mode === "top") {
+    // Vista cenital: el frente del tráiler (X bajo) debe apuntar HACIA
+    // ARRIBA en la pantalla. Eso se logra con up = (0,0,-1).
+    return { pos: [cx, cy + dist, cz], target: [cx, cy, cz], up: [0, 0, -1],
+             left: -halfH, right: halfH, top: halfV, bottom: -halfV };
+  }
   return null;
 }
 
@@ -53,11 +75,22 @@ function fixedCameraPose(mode, TR, aspect = 1) {
 function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep, trailer: TR, cameraMode = 'free' }) {
   const mountRef = useRef(null);
   const orbitState = stRef;
-  const threeRef = useRef({ scene: null, camera: null, renderer: null, animationFrameId: null });
-  // Ref con el modo de cámara más reciente — leído por los handlers (que viven
-  // dentro del useEffect inicial y de otra forma capturarían un valor viejo).
+  // Guardamos refs tanto a la perspectiva (modo free / OrbitControls casero)
+  // como a la ortográfica (vistas fijas). `activeCamera` apunta a la que
+  // se está renderizando ahora.
+  const threeRef = useRef({
+    scene: null,
+    perspectiveCamera: null,
+    orthoCamera: null,
+    activeCamera: null,
+    renderer: null,
+    animationFrameId: null,
+  });
+  // Refs con los valores más recientes — leídos por handlers / animate.
   const cameraModeRef = useRef(cameraMode);
   cameraModeRef.current = cameraMode;
+  const trailerRef = useRef(TR);
+  trailerRef.current = TR;
 
   useEffect(() => {
     const mountElement = mountRef.current;
@@ -68,7 +101,10 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(getThemeBackground());
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
+    const perspectiveCamera = new THREE.PerspectiveCamera(45, width / height, 1, 100000);
+    // Ortho: el frustum real se setea en el useEffect que reacciona a
+    // cameraMode/trailer; aquí solo placeholder con near/far razonables.
+    const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200000);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
@@ -77,18 +113,24 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
     mountElement.appendChild(renderer.domElement);
-    threeRef.current = { scene, camera, renderer, animationFrameId: null };
+    threeRef.current = {
+      scene, perspectiveCamera, orthoCamera, activeCamera: perspectiveCamera,
+      renderer, animationFrameId: null,
+    };
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1500, 2000, 1000);
     scene.add(directionalLight);
 
+    // Edges + floor iniciales — se etiquetan con userData.kind para que el
+    // useEffect dedicado a `trailer` pueda recrearlos cuando cambian dims.
     const trailerEdges = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.BoxGeometry(TR.largo, TR.alto, TR.ancho)),
       new THREE.LineBasicMaterial({ color: 0x334155 })
     );
     trailerEdges.position.set(TR.largo / 2, TR.alto / 2, TR.ancho / 2);
+    trailerEdges.userData.kind = "trailerEdges";
     scene.add(trailerEdges);
 
     const floorPlane = new THREE.Mesh(
@@ -102,34 +144,41 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     );
     floorPlane.rotation.x = -Math.PI / 2;
     floorPlane.position.set(TR.largo / 2, 0.5, TR.ancho / 2);
+    floorPlane.userData.kind = "floor";
     scene.add(floorPlane);
 
-    const centerX = TR.largo / 2;
-    const centerY = TR.alto / 2;
-    const centerZ = TR.ancho / 2;
-
-    const updateCamera = () => {
-      if (cameraModeRef.current !== 'free') {
-        // Modo fijo: la posición se setea via useEffect aparte. Solo aseguramos
-        // que la cámara mire al centro en cada frame por si algo la mueve.
-        const pose = fixedCameraPose(cameraModeRef.current, TR, camera.aspect);
-        if (pose) camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
-        return;
-      }
+    // Posición inicial de la perspectiva via orbitState.
+    const initOrbit = () => {
+      const t = trailerRef.current;
       const orbit = orbitState.current;
-      camera.position.set(
-        centerX + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
-        centerY + orbit.radius * Math.cos(orbit.phi),
-        centerZ + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
+      perspectiveCamera.position.set(
+        t.largo / 2 + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
+        t.alto / 2 + orbit.radius * Math.cos(orbit.phi),
+        t.ancho / 2 + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
       );
-      camera.lookAt(centerX, centerY, centerZ);
+      perspectiveCamera.lookAt(t.largo / 2, t.alto / 2, t.ancho / 2);
     };
-    updateCamera();
+    initOrbit();
+
+    // updateCamera solo actualiza la PERSPECTIVA (modo free). La ortho la
+    // configura el useEffect dependiente de [cameraMode, trailer] y no
+    // necesita actualizarse por frame.
+    const updateCamera = () => {
+      if (cameraModeRef.current !== 'free') return;
+      const t = trailerRef.current;
+      const orbit = orbitState.current;
+      perspectiveCamera.position.set(
+        t.largo / 2 + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
+        t.alto / 2 + orbit.radius * Math.cos(orbit.phi),
+        t.ancho / 2 + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
+      );
+      perspectiveCamera.lookAt(t.largo / 2, t.alto / 2, t.ancho / 2);
+    };
 
     const animate = () => {
       threeRef.current.animationFrameId = requestAnimationFrame(animate);
       updateCamera();
-      renderer.render(scene, camera);
+      renderer.render(scene, threeRef.current.activeCamera);
     };
     animate();
 
@@ -181,9 +230,9 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
       );
     }, { passive: true });
 
-    // ResizeObserver: el canvas sigue al contenedor cuando cambia de tamaño.
-    // Si estamos en una vista fija, recolocamos la cámara con el nuevo
-    // aspect — sin esto, un viewport más angosto cortaba el tráiler.
+    // ResizeObserver: ajusta ambas cámaras al nuevo aspect. La ortho
+    // necesita además recomputar el frustum porque su escala depende del
+    // aspect (a diferencia de la perspectiva, donde basta updateProjectionMatrix).
     let resizeObs = null;
     if (typeof ResizeObserver !== "undefined") {
       resizeObs = new ResizeObserver(entries => {
@@ -192,13 +241,18 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
           const h = entry.contentRect.height;
           if (w > 0 && h > 0) {
             renderer.setSize(w, h, false);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
+            const aspect = w / h;
+            perspectiveCamera.aspect = aspect;
+            perspectiveCamera.updateProjectionMatrix();
             if (cameraModeRef.current !== 'free') {
-              const pose = fixedCameraPose(cameraModeRef.current, TR, camera.aspect);
-              if (pose) {
-                camera.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
-                camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+              const conf = orthoView(cameraModeRef.current, trailerRef.current, aspect);
+              if (conf) {
+                const cam = threeRef.current.orthoCamera;
+                cam.left = conf.left;
+                cam.right = conf.right;
+                cam.top = conf.top;
+                cam.bottom = conf.bottom;
+                cam.updateProjectionMatrix();
               }
             }
           }
@@ -225,17 +279,72 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     };
   }, []);
 
-  // Cuando cambia cameraMode, recolocar la cámara en su posición fija (o
-  // dejarla bajo control de orbitState si vuelve a 'free').
+  // Recrea los edges del tráiler y el plano del piso cuando cambian las
+  // dims. Sin esto, editar el tráiler dejaba la wireframe vieja en escena.
   useEffect(() => {
-    const { camera } = threeRef.current;
-    if (!camera) return;
-    const pose = fixedCameraPose(cameraMode, TR, camera.aspect);
-    if (pose) {
-      camera.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
-      camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+    const ref = threeRef.current;
+    if (!ref || !ref.scene) return;
+    const scene = ref.scene;
+
+    const toRemove = scene.children.filter(o =>
+      o.userData?.kind === "trailerEdges" || o.userData?.kind === "floor"
+    );
+    toRemove.forEach(o => {
+      scene.remove(o);
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
+
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(TR.largo, TR.alto, TR.ancho)),
+      new THREE.LineBasicMaterial({ color: 0x334155 })
+    );
+    edges.position.set(TR.largo / 2, TR.alto / 2, TR.ancho / 2);
+    edges.userData.kind = "trailerEdges";
+    scene.add(edges);
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(TR.largo, TR.ancho),
+      new THREE.MeshBasicMaterial({
+        color: 0x0F172A,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.5,
+      })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(TR.largo / 2, 0.5, TR.ancho / 2);
+    floor.userData.kind = "floor";
+    scene.add(floor);
+  }, [TR.largo, TR.alto, TR.ancho]);
+
+  // Cambia entre perspectiva (modo free) y ortográfica (vistas fijas), y
+  // recalcula el frustum de la ortho según el modo + dims actuales.
+  useEffect(() => {
+    const ref = threeRef.current;
+    if (!ref || !ref.renderer || !ref.orthoCamera) return;
+
+    if (cameraMode === "free") {
+      ref.activeCamera = ref.perspectiveCamera;
+      return;
     }
-    // En modo 'free' no tocamos nada — el animate loop lee orbitState.
+
+    const w = ref.renderer.domElement.clientWidth || 1;
+    const h = ref.renderer.domElement.clientHeight || 1;
+    const aspect = w / h;
+    const conf = orthoView(cameraMode, TR, aspect);
+    if (!conf) return;
+
+    const cam = ref.orthoCamera;
+    cam.left = conf.left;
+    cam.right = conf.right;
+    cam.top = conf.top;
+    cam.bottom = conf.bottom;
+    cam.position.set(conf.pos[0], conf.pos[1], conf.pos[2]);
+    cam.up.set(conf.up[0], conf.up[1], conf.up[2]);
+    cam.lookAt(conf.target[0], conf.target[1], conf.target[2]);
+    cam.updateProjectionMatrix();
+    ref.activeCamera = cam;
   }, [cameraMode, TR.largo, TR.alto, TR.ancho]);
 
   useEffect(() => {

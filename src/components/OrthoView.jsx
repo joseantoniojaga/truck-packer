@@ -119,6 +119,10 @@ function OV({ placed, vk: viewKind, selId, onSel, trailer: TR }) {
         borderRadius: "var(--radius-sm)",
         border: `1px solid ${COLORS.card}`,
         overflow: "hidden",
+        // Stacking context local: el item seleccionado se eleva via z-index
+        // relativo a sus hermanos, no a la página entera (antes saltaba
+        // encima de la ActionBar global).
+        isolation: "isolate",
       }}>
         {visibleItems.map((placedItem, index) => {
           const coords = getCoords(placedItem);
@@ -139,7 +143,7 @@ function OV({ placed, vk: viewKind, selId, onSel, trailer: TR }) {
                 borderRadius: 1,
                 cursor: "pointer",
                 opacity: isSelected ? 1 : 0.85,
-                zIndex: isSelected ? 10 : 1,
+                zIndex: isSelected ? 2 : 1,
                 boxShadow: isSelected ? `0 0 0 2px ${placedItem.color}` : "none",
               }}
               title={placedItem.name}
