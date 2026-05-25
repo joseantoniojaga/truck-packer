@@ -19,7 +19,10 @@ export default function ConfirmModal({
   confirmLabel = 'Aceptar', cancelLabel = 'Cancelar',
   variant = 'default',
   onConfirm, onCancel,
-  nested = true,
+  // Default false → muestra backdrop oscuro (más intuitivo cuando se usa
+  // como modal standalone). Quien lo abre desde dentro de OTRO modal con
+  // su propio backdrop debe pasar `nested={true}` para evitar stacking.
+  nested = false,
 }) {
   useEffect(() => {
     if (!open) return;

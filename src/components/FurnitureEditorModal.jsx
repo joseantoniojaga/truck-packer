@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal.jsx';
 import { alpha } from '../styles/util.js';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 
-// Paleta curada de 12 colores. La distribución visual es 6×2 (en CSS
-// flex-wrap), y al final aparece un botón "+" para abrir el color picker
-// nativo cuando ninguno de los 12 sirve.
+// Paleta curada de 13 colores. La distribución natural (con flex-wrap) es
+// 7+7 (7 swatches + 7 swatches incluyendo el botón "+" al final), pero el
+// orden importa: el amarillo (#E5C547) se mete tras el beige para cerrar
+// la primera fila sin huecos antes del primer color frío.
 const PALETTE = [
-  "#E07A5F", "#81A7C8", "#9BBFA7", "#E9C892", "#6FA068", "#A8C765",
+  "#E07A5F", "#81A7C8", "#9BBFA7", "#E9C892", "#E5C547", "#6FA068", "#A8C765",
   "#C0322B", "#9B6CCF", "#1F5E6B", "#42B0D5", "#E08A1F", "#B8A0D8",
 ];
 
@@ -34,9 +35,6 @@ export default function FurnitureEditorModal({
   const [fondo, setFondo] = useState('');
   const [inv, setInv] = useState('');
   const [color, setColor] = useState(PALETTE[0]);
-  // Ref al input type="color" oculto — se dispara con click() desde el
-  // botón "+" custom para mostrar el picker nativo del sistema.
-  const colorInputRef = useRef(null);
 
   // Reset form cada vez que el modal abre o cambia el mueble inicial
   useEffect(() => {
@@ -194,42 +192,53 @@ export default function FurnitureEditorModal({
               />
             );
           })}
-          {/* Botón "+" custom: dispara el color picker nativo (input oculto).
-              Muestra el color elegido como background cuando NO es uno de la
-              paleta — así se ve cuál fue el custom seleccionado. */}
+          {/* Botón "+" custom: input[type=color] invisible que ocupa el mismo
+              área visual del botón. El navegador ancla el picker nativo al
+              elemento clickeado, así aparece exactamente sobre el botón. */}
           {(() => {
             const isCustom = !PALETTE.some(c => c.toLowerCase() === color.toLowerCase());
             return (
-              <button
-                type="button"
-                onClick={() => colorInputRef.current?.click()}
-                aria-label="Color personalizado"
-                title="Color personalizado"
-                className="color-swatch"
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  padding: 0, cursor: "pointer",
-                  background: isCustom ? color : "transparent",
-                  border: `2px dashed var(--border)`,
-                  outline: isCustom ? "3px solid var(--text-primary)" : "none",
-                  outlineOffset: 2,
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  color: isCustom ? "transparent" : "var(--text-tertiary)",
-                  transition: "transform 150ms ease",
-                }}
-              >
-                <Plus size={16} />
-              </button>
+              <div style={{ position: "relative", width: 36, height: 36 }}>
+                {/* Capa visual — no captura eventos, el input los toma. */}
+                <div
+                  aria-hidden
+                  className="color-swatch"
+                  style={{
+                    position: "absolute", inset: 0,
+                    borderRadius: "50%",
+                    background: isCustom ? color : "transparent",
+                    border: `2px dashed var(--border)`,
+                    outline: isCustom ? "3px solid var(--text-primary)" : "none",
+                    outlineOffset: 2,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    color: isCustom ? "transparent" : "var(--text-tertiary)",
+                    pointerEvents: "none",
+                    transition: "transform 150ms ease",
+                  }}
+                >
+                  <Plus size={16} />
+                </div>
+                {/* Input nativo encima — invisible pero clickeable. Ancla
+                    el picker del navegador justo en el botón. */}
+                <input
+                  type="color"
+                  value={color}
+                  onChange={e => setColor(e.target.value)}
+                  aria-label="Color personalizado"
+                  title="Color personalizado"
+                  style={{
+                    position: "absolute", inset: 0,
+                    width: 36, height: 36,
+                    opacity: 0,
+                    cursor: "pointer",
+                    border: "none",
+                    padding: 0,
+                    background: "transparent",
+                  }}
+                />
+              </div>
             );
           })()}
-          <input
-            ref={colorInputRef}
-            type="color" value={color}
-            onChange={e => setColor(e.target.value)}
-            style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
-            tabIndex={-1}
-            aria-hidden
-          />
         </div>
       </div>
 

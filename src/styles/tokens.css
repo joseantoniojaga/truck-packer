@@ -300,6 +300,16 @@ input, textarea, select {
   font-weight: 600;
   transition: background-color 150ms ease;
 }
+/* Forzar tamaño visual idéntico en los 3 iconos del footer. Sin este
+   override, Lucide aplica el `size` prop al SVG container pero el contenido
+   interno (Plus vs Save) llena el viewBox de forma distinta, dando una
+   apariencia inconsistente entre los 3 botones. */
+.inv-footer-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+  stroke-width: 2 !important;
+  flex-shrink: 0;
+}
 .inv-footer-btn:hover:not(:disabled) {
   background: var(--bg-subtle);
 }

@@ -601,27 +601,118 @@ export default function App(){
           </div>
 
           {simMode ? (
-            <div style={{marginTop:8,background:"var(--bg-subtle)",borderRadius:"var(--radius-md)",padding:10,border:`1px solid ${alpha('--secondary', 27)}`,flexShrink:0}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <span style={{fontSize:"var(--text-xs)",fontWeight:600,color:"var(--secondary)"}}>Simulador de carga</span>
-                <button onClick={stopSim} style={{...B,padding:"2px 8px",fontSize:"var(--text-xs)",color:"var(--error)",borderColor:alpha('--error', 27),display:"inline-flex",alignItems:"center",gap:4}}><X size={12}/>Salir</button>
+            <div style={{
+              position:"relative",
+              marginTop:8,
+              background:"var(--surface)",
+              borderRadius:"var(--radius-lg)",
+              padding:"16px 20px",
+              border:"1px solid var(--border)",
+              boxShadow:"var(--shadow-sm)",
+              flexShrink:0,
+            }}>
+              {/* Título grande */}
+              <div style={{
+                fontSize:"var(--text-lg)", fontWeight:700,
+                color:"var(--text-primary)",
+                marginBottom:12,
+                paddingRight:40, // deja espacio para el X superior derecho
+              }}>
+                Simulador de carga
               </div>
-              <div style={{background:"var(--surface)",borderRadius:"var(--radius-sm)",height:6,marginBottom:8,overflow:"hidden"}}>
+              {/* X circular en la esquina (mismo patrón que Modal.showClose) */}
+              <button
+                type="button"
+                onClick={stopSim}
+                aria-label="Salir del simulador"
+                title="Salir del simulador"
+                style={{
+                  position:"absolute", top:12, right:12,
+                  width:32, height:32, padding:0,
+                  borderRadius:"var(--radius-sm)", border:"none",
+                  background:"transparent", cursor:"pointer",
+                  display:"inline-flex", alignItems:"center", justifyContent:"center",
+                  color:"var(--text-secondary)",
+                  transition:"background-color 150ms ease",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--surface-hover)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <X size={18}/>
+              </button>
+
+              {/* Barra de progreso */}
+              <div style={{background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",height:6,marginBottom:10,overflow:"hidden"}}>
                 <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,var(--secondary),var(--primary))`,borderRadius:"var(--radius-sm)",transition:"width 0.3s"}}/>
               </div>
+
+              {/* Instrucción del paso actual / completo */}
               {simStep>0&&simStep<=simSequence.length&&(
-                <div style={{fontSize:"var(--text-xs)",color:"var(--text-secondary)",marginBottom:8,background:"var(--surface)",borderRadius:"var(--radius-sm)",padding:"6px 8px",lineHeight:1.4}}>
+                <div style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",marginBottom:10,background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",padding:"8px 10px",lineHeight:1.4}}>
                   <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
                 </div>
               )}
-              {simStep===0&&<div style={{fontSize:"var(--text-xs)",color:"var(--text-tertiary)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>Presiona <Play size={12} style={{display:"inline-block"}}/> para avanzar paso a paso</div>}
-              {simStep===simSequence.length&&simSequence.length>0&&<div style={{fontSize:"var(--text-xs)",color:"var(--success)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><Check size={14}/>Carga completa ({simSequence.length} muebles)</div>}
-              <div style={{display:"flex",gap:4,justifyContent:"center"}}>
-                <button onClick={()=>setSimStep(0)} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Primer paso" aria-label="Primer paso"><SkipBack size={14}/></button>
-                <button onClick={()=>setSimStep(s=>Math.max(0,s-1))} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Anterior" aria-label="Anterior"><Rewind size={14}/></button>
-                <button onClick={simAutoPlay} style={{...B,padding:"5px 12px",fontSize:"var(--text-sm)",color:simPlaying?"var(--warning)":"var(--secondary)",borderColor:simPlaying?alpha('--warning', 27):alpha('--secondary', 27),display:"inline-flex",alignItems:"center",gap:6}}>{simPlaying?<><Pause size={14}/>Pausar</>:<><Play size={14}/>Auto</>}</button>
-                <button onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Siguiente" aria-label="Siguiente"><Play size={14}/></button>
-                <button onClick={()=>setSimStep(simSequence.length)} style={{...B,padding:"5px 10px",fontSize:"var(--text-sm)",color:"var(--text-secondary)",display:"inline-flex",alignItems:"center"}} title="Último paso" aria-label="Último paso"><SkipForward size={14}/></button>
+              {simStep===simSequence.length&&simSequence.length>0&&(
+                <div style={{fontSize:"var(--text-sm)",color:"var(--success)",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                  <Check size={14}/>Carga completa ({simSequence.length} muebles)
+                </div>
+              )}
+
+              {/* Controles estilo ActionBar — centrados horizontalmente */}
+              <div style={{display:"flex",justifyContent:"center"}}>
+              <div style={{
+                display:"inline-flex",
+                gap:4,
+                padding:6,
+                background:"var(--bg-subtle)",
+                border:"1px solid var(--border)",
+                borderRadius:"var(--radius-lg)",
+              }}>
+                <button
+                  type="button" className="action-btn action-btn--secondary"
+                  onClick={()=>setSimStep(0)}
+                  title="Primer paso" aria-label="Primer paso"
+                  style={{padding:"10px 14px"}}
+                >
+                  <SkipBack size={16} strokeWidth={2}/>
+                </button>
+                <button
+                  type="button" className="action-btn action-btn--secondary"
+                  onClick={()=>setSimStep(s=>Math.max(0,s-1))}
+                  title="Anterior" aria-label="Anterior"
+                  style={{padding:"10px 14px"}}
+                >
+                  <Rewind size={16} strokeWidth={2}/>
+                </button>
+                <button
+                  type="button"
+                  className={`action-btn ${simPlaying?"action-btn--secondary":"action-btn--primary"}`}
+                  onClick={simAutoPlay}
+                  title={simPlaying?"Pausar":"Auto-reproducir"}
+                  aria-label={simPlaying?"Pausar":"Auto-reproducir"}
+                  style={{padding:"10px 14px"}}
+                >
+                  {simPlaying
+                    ? <><Pause size={16} strokeWidth={2}/>Pausar</>
+                    : <><Play size={16} strokeWidth={2}/>Auto</>}
+                </button>
+                <button
+                  type="button" className="action-btn action-btn--secondary"
+                  onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))}
+                  title="Siguiente" aria-label="Siguiente"
+                  style={{padding:"10px 14px"}}
+                >
+                  <Play size={16} strokeWidth={2}/>
+                </button>
+                <button
+                  type="button" className="action-btn action-btn--secondary"
+                  onClick={()=>setSimStep(simSequence.length)}
+                  title="Último paso" aria-label="Último paso"
+                  style={{padding:"10px 14px"}}
+                >
+                  <SkipForward size={16} strokeWidth={2}/>
+                </button>
+              </div>
               </div>
             </div>
           ) : (

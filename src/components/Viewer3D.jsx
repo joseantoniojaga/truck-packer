@@ -20,7 +20,9 @@ function fixedCameraPose(mode, TR) {
   const cx = TR.largo / 2;
   const cy = TR.alto / 2;
   const cz = TR.ancho / 2;
-  const dist = Math.max(TR.largo, TR.alto, TR.ancho) * 1.5;
+  // 0.85× la dim más grande — más cercano que el 1.5× original para que el
+  // tráiler ocupe más del visor en las vistas fijas (Frente/Lado/Arriba).
+  const dist = Math.max(TR.largo, TR.alto, TR.ancho) * 0.85;
   if (mode === 'front') {
     // Mirando desde fuera del tráiler hacia la cara delantera (X bajo).
     return { pos: [-dist, cy, cz], target: [cx, cy, cz] };

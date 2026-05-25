@@ -230,14 +230,14 @@ export default function InventoryManagerModal({
           className="inv-footer-btn"
           style={{ color: "var(--success)" }}
         >
-          <Plus size={18} strokeWidth={2}/><span>Crear vacío</span>
+          <Plus/><span>Crear vacío</span>
         </button>
         <button
           onClick={() => setPromptState({ kind: 'saveAsNew' })}
           className="inv-footer-btn"
           style={{ color: "var(--primary)" }}
         >
-          <Save size={18} strokeWidth={2}/><span>Guardar como</span>
+          <Save/><span>Guardar como</span>
         </button>
         <div aria-hidden style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
         <button
@@ -248,8 +248,8 @@ export default function InventoryManagerModal({
           title="Reemplaza los items del inventario activo con los actuales"
         >
           {savedFlash
-            ? <><Check size={18} strokeWidth={2}/><span>Guardado</span></>
-            : <><Save size={18} strokeWidth={2}/><span>Sobrescribir</span></>}
+            ? <><Check/><span>Guardado</span></>
+            : <><Save/><span>Sobrescribir</span></>}
         </button>
       </div>
 
