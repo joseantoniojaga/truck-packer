@@ -14,27 +14,37 @@ function getThemeBackground() {
   return (computed.getPropertyValue("--bg-subtle").trim() || "#EEF2F6");
 }
 
-// Computa la posición de la cámara para los modos fijos. El tráiler está
-// centrado en (largo/2, alto/2, ancho/2). Distancia: 1.5× la dim más grande.
-function fixedCameraPose(mode, TR) {
+// Computa la posición de la cámara para los modos fijos haciendo un
+// verdadero fit-to-view. El tráiler está centrado en (largo/2, alto/2,
+// ancho/2). Calcula la distancia mínima para que el bbox visible del
+// tráiler en cada modo entre justo en el viewport — tanto verticalmente
+// (limitado por vFov) como horizontalmente (limitado por hFov ≈ vFov · aspect).
+// Esto funciona tanto para tráileres alargados (16×2.47×2.80) como
+// pequeños/cuadrados (2×2×2) sin recortes ni zooms exagerados.
+function fixedCameraPose(mode, TR, aspect = 1) {
   const cx = TR.largo / 2;
   const cy = TR.alto / 2;
   const cz = TR.ancho / 2;
-  // 0.85× la dim más grande — más cercano que el 1.5× original para que el
-  // tráiler ocupe más del visor en las vistas fijas (Frente/Lado/Arriba).
-  const dist = Math.max(TR.largo, TR.alto, TR.ancho) * 0.85;
-  if (mode === 'front') {
-    // Mirando desde fuera del tráiler hacia la cara delantera (X bajo).
-    return { pos: [-dist, cy, cz], target: [cx, cy, cz] };
-  }
-  if (mode === 'side') {
-    // Lateral derecho.
-    return { pos: [cx, cy, cz + dist], target: [cx, cy, cz] };
-  }
-  if (mode === 'top') {
-    // Picada cenital.
-    return { pos: [cx, cy + dist, cz], target: [cx, cy, cz] };
-  }
+
+  const vFov = (45 * Math.PI) / 180;
+  const margin = 1.15; // 15% de espacio alrededor del tráiler
+
+  // bbox visible en pantalla (H = horizontal, V = vertical) según el modo.
+  let bboxH, bboxV;
+  if (mode === 'front')      { bboxH = TR.ancho; bboxV = TR.alto;  }
+  else if (mode === 'side')  { bboxH = TR.largo; bboxV = TR.alto;  }
+  else if (mode === 'top')   { bboxH = TR.ancho; bboxV = TR.largo; }
+  else return null;
+
+  // Distancia mínima para que el bbox entre verticalmente (limita el vFov).
+  const distV = (bboxV / 2) / Math.tan(vFov / 2);
+  // Distancia mínima para que entre horizontalmente (hFov efectivo).
+  const distH = (bboxH / 2) / (Math.tan(vFov / 2) * aspect);
+  const dist = Math.max(distV, distH) * margin;
+
+  if (mode === 'front') return { pos: [cx - dist, cy, cz], target: [cx, cy, cz] };
+  if (mode === 'side')  return { pos: [cx, cy, cz + dist], target: [cx, cy, cz] };
+  if (mode === 'top')   return { pos: [cx, cy + dist, cz], target: [cx, cy, cz] };
   return null;
 }
 
@@ -102,7 +112,7 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
       if (cameraModeRef.current !== 'free') {
         // Modo fijo: la posición se setea via useEffect aparte. Solo aseguramos
         // que la cámara mire al centro en cada frame por si algo la mueve.
-        const pose = fixedCameraPose(cameraModeRef.current, TR);
+        const pose = fixedCameraPose(cameraModeRef.current, TR, camera.aspect);
         if (pose) camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
         return;
       }
@@ -172,6 +182,8 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
     }, { passive: true });
 
     // ResizeObserver: el canvas sigue al contenedor cuando cambia de tamaño.
+    // Si estamos en una vista fija, recolocamos la cámara con el nuevo
+    // aspect — sin esto, un viewport más angosto cortaba el tráiler.
     let resizeObs = null;
     if (typeof ResizeObserver !== "undefined") {
       resizeObs = new ResizeObserver(entries => {
@@ -182,6 +194,13 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
             renderer.setSize(w, h, false);
             camera.aspect = w / h;
             camera.updateProjectionMatrix();
+            if (cameraModeRef.current !== 'free') {
+              const pose = fixedCameraPose(cameraModeRef.current, TR, camera.aspect);
+              if (pose) {
+                camera.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
+                camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
+              }
+            }
           }
         }
       });
@@ -211,7 +230,7 @@ function Viewer3D({ placed, selId, stRef, onZoomIn, onZoomOut, simMode, simStep,
   useEffect(() => {
     const { camera } = threeRef.current;
     if (!camera) return;
-    const pose = fixedCameraPose(cameraMode, TR);
+    const pose = fixedCameraPose(cameraMode, TR, camera.aspect);
     if (pose) {
       camera.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
       camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);

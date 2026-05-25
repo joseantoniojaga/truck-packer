@@ -55,13 +55,23 @@ function OV({ placed, vk: viewKind, selId, onSel, trailer: TR }) {
     }
   };
 
+  // aspectRatios calculados dinámicamente de las dims reales del tráiler.
+  // paddingBottom = height/width × 100 (técnica clásica de aspect ratio sin
+  // `aspect-ratio` CSS). Para cada vista, el "ancho" del viewport corresponde
+  // a la dim horizontal de la proyección, y la "altura" a la vertical:
+  //   - top/bottom : H=largo,  V=ancho
+  //   - front/back : H=ancho,  V=alto
+  //   - right/left : H=largo,  V=alto
+  const trailerLargo = TR.largo;
+  const trailerAncho = TR.ancho;
+  const trailerAlto  = TR.alto;
   const aspectRatios = {
-    top: 25,
-    bottom: 25,
-    front: 80,
-    back: 80,
-    right: 20,
-    left: 20,
+    top:    (trailerAncho / trailerLargo) * 100,
+    bottom: (trailerAncho / trailerLargo) * 100,
+    front:  (trailerAlto  / trailerAncho) * 100,
+    back:   (trailerAlto  / trailerAncho) * 100,
+    right:  (trailerAlto  / trailerLargo) * 100,
+    left:   (trailerAlto  / trailerLargo) * 100,
   };
   const labels = {
     top: "Superior",

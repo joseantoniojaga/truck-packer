@@ -18,7 +18,16 @@ const inputStyle = {
   boxSizing: "border-box", fontVariantNumeric: "tabular-nums",
 };
 const labelStyle = { fontSize: "var(--text-base)", color: "var(--text-secondary)", marginBottom: 6, display: "block" };
-const errorStyle = { fontSize: "var(--text-xs)", color: "var(--error)", marginTop: 4 };
+// Slot fijo para el mensaje de error. Mantiene siempre el mismo alto (con o
+// sin error) para que el modal no haga reflow cuando el usuario escribe un
+// valor inválido y luego lo corrige.
+const errorSlotStyle = {
+  fontSize: "var(--text-xs)",
+  color: "var(--error)",
+  marginTop: 4,
+  minHeight: 16,
+  lineHeight: 1.3,
+};
 
 // Conversores. Mantenemos cm como unidad interna canónica; las cadenas en
 // el form se interpretan según `unit` activo.
@@ -203,7 +212,7 @@ export default function TrailerEditorModal({
                 onChange={e => setLargo(e.target.value)}
                 style={inputStyle}
               />
-              {errors.largo && <div style={errorStyle}>{errors.largo}</div>}
+              <div style={errorSlotStyle} aria-live="polite">{errors.largo || ""}</div>
             </div>
             <div>
               <label style={labelStyle}>Ancho ({unitLabel})</label>
@@ -212,7 +221,7 @@ export default function TrailerEditorModal({
                 onChange={e => setAncho(e.target.value)}
                 style={inputStyle}
               />
-              {errors.ancho && <div style={errorStyle}>{errors.ancho}</div>}
+              <div style={errorSlotStyle} aria-live="polite">{errors.ancho || ""}</div>
             </div>
             <div>
               <label style={labelStyle}>Alto ({unitLabel})</label>
@@ -221,7 +230,7 @@ export default function TrailerEditorModal({
                 onChange={e => setAlto(e.target.value)}
                 style={inputStyle}
               />
-              {errors.alto && <div style={errorStyle}>{errors.alto}</div>}
+              <div style={errorSlotStyle} aria-live="polite">{errors.alto || ""}</div>
             </div>
           </div>
 

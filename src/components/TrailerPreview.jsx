@@ -17,13 +17,35 @@
 const COS30 = Math.cos(Math.PI / 6);
 const SIN30 = Math.sin(Math.PI / 6);
 
-// Padding interno del viewBox — espacio para las etiquetas. Más holgado a
-// la izquierda (label "Alto") y abajo (labels "Largo" / "Ancho").
-const VB_W = 280, VB_H = 240;
-const PAD_X = 50, PAD_Y = 36;
+// Las etiquetas viven en una row HTML debajo del SVG (no compiten con las
+// aristas), así que el padding interno del viewBox solo necesita evitar que
+// el wireframe toque los bordes — basta con un margen ligero.
+const VB_W = 280, VB_H = 200;
+const PAD_X = 16, PAD_Y = 16;
 
 function project(x, y, z) {
   return { px: (x - y) * COS30, py: (x + y) * SIN30 - z };
+}
+
+// Etiquetas dimensionales en una row debajo del SVG. Componente trivial,
+// extraído para que la lógica de proyección quede compacta.
+function DimsRow({ L, W, H }) {
+  const fmt = (cm) => (cm / 100).toFixed(2) + " m";
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: "space-around",
+      gap: 8,
+      marginTop: 8,
+      fontSize: "var(--text-xs)",
+      color: "var(--text-tertiary)",
+      fontVariantNumeric: "tabular-nums",
+    }}>
+      <span>Largo {fmt(L)}</span>
+      <span>Ancho {fmt(W)}</span>
+      <span>Alto {fmt(H)}</span>
+    </div>
+  );
 }
 
 export default function TrailerPreview({ largo, ancho, alto }) {
@@ -31,7 +53,12 @@ export default function TrailerPreview({ largo, ancho, alto }) {
   const W = Number(ancho) || 0;
   const H = Number(alto) || 0;
   if (L <= 0 || W <= 0 || H <= 0) {
-    return <svg viewBox={`0 0 ${VB_W} ${VB_H}`} style={{ width: "100%", height: "auto" }} />;
+    return (
+      <div>
+        <svg viewBox={`0 0 ${VB_W} ${VB_H}`} style={{ width: "100%", height: "auto" }} />
+        <DimsRow L={L} W={W} H={H}/>
+      </div>
+    );
   }
 
   // 8 vértices del box (en orden indexado).
@@ -90,45 +117,19 @@ export default function TrailerPreview({ largo, ancho, alto }) {
     />
   );
 
-  // Helpers para colocar las etiquetas en el midpoint de la arista referencia.
-  const mid = (a, b) => ({ x: (p[a].x + p[b].x) / 2, y: (p[a].y + p[b].y) / 2 });
-  const fmt = (cm) => (cm / 100).toFixed(2) + " m";
-
-  // Largo: midpoint de 0-1 (arista frente-bottom), texto debajo y centrado.
-  const labelLargo = mid(0, 1);
-  // Ancho: midpoint de 1-3 (arista derecha-bottom), texto a la derecha-abajo.
-  const labelAncho = mid(1, 3);
-  // Alto: midpoint de 0-4 (vertical frente-izq), texto a la izquierda.
-  const labelAlto = mid(0, 4);
-
-  const labelStyle = {
-    fontSize: "var(--text-xs)",
-    fill: "var(--text-tertiary)",
-    fontVariantNumeric: "tabular-nums",
-    fontFamily: "inherit",
-  };
-
   return (
-    <svg
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
-      style={{ width: "100%", height: "auto", display: "block" }}
-      aria-label="Vista isométrica del tráiler"
-    >
-      {/* Edges ocultos primero (debajo) */}
-      {HIDDEN.map((e, i) => line(e, i, true))}
-      {/* Edges visibles encima */}
-      {VISIBLE.map((e, i) => line(e, i, false))}
-
-      {/* Etiquetas */}
-      <text x={labelLargo.x} y={labelLargo.y + 18} textAnchor="middle" style={labelStyle}>
-        Largo {fmt(L)}
-      </text>
-      <text x={labelAncho.x + 14} y={labelAncho.y + 14} textAnchor="start" style={labelStyle}>
-        Ancho {fmt(W)}
-      </text>
-      <text x={labelAlto.x - 10} y={labelAlto.y + 4} textAnchor="end" style={labelStyle}>
-        Alto {fmt(H)}
-      </text>
-    </svg>
+    <div>
+      <svg
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        style={{ width: "100%", height: "auto", display: "block" }}
+        aria-label="Vista isométrica del tráiler"
+      >
+        {/* Edges ocultos primero (debajo) */}
+        {HIDDEN.map((e, i) => line(e, i, true))}
+        {/* Edges visibles encima */}
+        {VISIBLE.map((e, i) => line(e, i, false))}
+      </svg>
+      <DimsRow L={L} W={W} H={H}/>
+    </div>
   );
 }
