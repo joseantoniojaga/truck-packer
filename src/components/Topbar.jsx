@@ -20,7 +20,7 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-lg)",
         padding: "12px 20px",
-        marginBottom: 12,
+        marginBottom: 24,
         boxShadow: "var(--shadow-sm)",
         display: "flex",
         alignItems: "center",

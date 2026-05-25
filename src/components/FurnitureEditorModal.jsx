@@ -3,13 +3,16 @@ import Modal from './Modal.jsx';
 import { alpha } from '../styles/util.js';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 
-// Paleta curada de 13 colores. La distribución natural (con flex-wrap) es
-// 7+7 (7 swatches + 7 swatches incluyendo el botón "+" al final), pero el
-// orden importa: el amarillo (#E5C547) se mete tras el beige para cerrar
-// la primera fila sin huecos antes del primer color frío.
+// Paleta curada de 14 colores en grid 10×N. La primera fila se llena con 10
+// colores cálidos+neutros; la segunda fila contiene 4 colores fríos + el
+// botón "+" custom. El gris azulado (#7B8794) cierra la primera fila como
+// neutro útil para muebles tonos cemento/aluminio.
 const PALETTE = [
-  "#E07A5F", "#81A7C8", "#9BBFA7", "#E9C892", "#E5C547", "#6FA068", "#A8C765",
-  "#C0322B", "#9B6CCF", "#1F5E6B", "#42B0D5", "#E08A1F", "#B8A0D8",
+  // Fila 1 (10 colores):
+  "#E07A5F", "#81A7C8", "#9BBFA7", "#E9C892", "#E5C547",
+  "#6FA068", "#A8C765", "#C0322B", "#9B6CCF", "#7B8794",
+  // Fila 2 (4 colores + botón "+" en posición 5):
+  "#1F5E6B", "#42B0D5", "#E08A1F", "#B8A0D8",
 ];
 
 const inputStyle = {
@@ -121,7 +124,7 @@ export default function FurnitureEditorModal({
       open={open} onClose={onClose}
       title={<span style={{display:'inline-flex',alignItems:'center',gap:8}}><TitleIcon size={20}/>{titleText}</span>}
       titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}
-      maxWidth={500}
+      maxWidth={540}
       hidden={hidden}
     >
       {isEdit && (
@@ -173,7 +176,15 @@ export default function FurnitureEditorModal({
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ ...labelStyle, marginBottom: 10 }}>Color</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+        {/* Grid fijo de 10 columnas. Fila 1 = 10 colores, fila 2 = 4 colores
+            + botón "+" custom. El layout es estable independientemente del
+            ancho del modal mientras quepa la fila completa. */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(10, 36px)",
+          gap: 12,
+          justifyContent: "start",
+        }}>
           {PALETTE.map(c => {
             const isSelected = color.toLowerCase() === c.toLowerCase();
             return (

@@ -646,17 +646,55 @@ export default function App(){
                 <div style={{width:`${simSequence.length>0?(simStep/simSequence.length)*100:0}%`,height:"100%",background:`linear-gradient(90deg,var(--secondary),var(--primary))`,borderRadius:"var(--radius-sm)",transition:"width 0.3s"}}/>
               </div>
 
-              {/* Instrucción del paso actual / completo */}
-              {simStep>0&&simStep<=simSequence.length&&(
-                <div style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",marginBottom:10,background:"var(--bg-subtle)",borderRadius:"var(--radius-sm)",padding:"8px 10px",lineHeight:1.4}}>
-                  <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span> {simSequence[simStep-1]?.instruction}
-                </div>
-              )}
-              {simStep===simSequence.length&&simSequence.length>0&&(
-                <div style={{fontSize:"var(--text-sm)",color:"var(--success)",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-                  <Check size={14}/>Carga completa ({simSequence.length} muebles)
-                </div>
-              )}
+              {/* Instrucción del paso actual + indicador de completado.
+                  Container con altura mínima fija para que el panel no salte
+                  al pasar de "en progreso" a "completo". Cuando ya terminó,
+                  el mensaje "Carga completa" aparece A LA DERECHA del paso,
+                  no en una línea nueva debajo. */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                marginBottom: 10,
+                padding: "8px 10px",
+                background: "var(--bg-subtle)",
+                borderRadius: "var(--radius-sm)",
+                minHeight: 40,
+                lineHeight: 1.4,
+              }}>
+                <span style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-secondary)",
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  flex: 1,
+                }}>
+                  {simStep > 0 && simStep <= simSequence.length && (
+                    <>
+                      <span style={{color:"var(--secondary)",fontWeight:600}}>Paso {simStep}/{simSequence.length}:</span>{" "}
+                      {simSequence[simStep-1]?.instruction}
+                    </>
+                  )}
+                </span>
+                {simStep === simSequence.length && simSequence.length > 0 && (
+                  <span style={{
+                    fontSize: "var(--text-sm)",
+                    color: "var(--success)",
+                    fontWeight: 600,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}>
+                    <Check size={16}/>
+                    Carga completa ({simSequence.length} muebles)
+                  </span>
+                )}
+              </div>
 
               {/* Controles estilo ActionBar — centrados horizontalmente */}
               <div style={{display:"flex",justifyContent:"center"}}>
