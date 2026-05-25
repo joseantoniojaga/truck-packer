@@ -136,17 +136,26 @@ input, textarea, select {
   transform: translateY(-1px);
 }
 
-/* Stepper integrado */
+/* Stepper integrado. El stepper debe verse IDÉNTICO en todos los muebles sin
+   importar si el `inv` es 12 o 999 — por eso forzamos tamaños fijos en los
+   botones y bloqueamos flex-grow/shrink (algunos inline-styles inyectan
+   padding, pero el width fijo gana). */
 .stepper-btn {
   background: transparent;
   border: none;
-  padding: 8px 12px;
+  padding: 0 !important;
+  width: 44px;
+  min-width: 44px;
+  height: 100%;
+  flex: 0 0 44px;
   color: var(--text-secondary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   transition: background-color 120ms ease;
 }
+.stepper-btn > svg { flex-shrink: 0; }
 .stepper-btn:hover:not(:disabled) {
   background: var(--surface-hover);
 }

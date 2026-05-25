@@ -107,7 +107,7 @@ export default function InventoryManagerModal({
     if (promptState.kind === 'createEmpty') return {
       title: 'Nuevo inventario',
       label: 'Nombre del nuevo inventario',
-      description: 'Arranca vacío — vas a agregar muebles después en el Paso 3.',
+      description: null,
       placeholder: 'Ej. Mudanza Hampton',
       submitLabel: 'Crear',
       initialValue: '',
@@ -249,7 +249,7 @@ export default function InventoryManagerModal({
         >
           {savedFlash
             ? <><Check/><span>Guardado</span></>
-            : <><Save/><span>Sobrescribir</span></>}
+            : <><Save/><span>Guardar</span></>}
         </button>
       </div>
 

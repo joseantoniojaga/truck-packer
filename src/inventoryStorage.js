@@ -1,8 +1,12 @@
 // Persistencia de inventarios en localStorage.
 //
-// Estructura por inventario: { id: string, name: string, items: Array<Furniture> }
-// Cada item: { id, name, color, ancho, alto, fondo, inv } — sin `load` (eso es
-// estado de sesión, no de inventario).
+// Estructura por inventario: { id, name, items, customColors }
+//   items:        Array<Furniture> con shape { id, name, color, ancho, alto, fondo, inv }
+//                 — sin `load` (eso es estado de sesión, no de inventario).
+//   customColors: string[] de hex `#RRGGBB` que el usuario eligió via el color
+//                 picker nativo. Vive por inventario (cada uno tiene su paleta
+//                 ampliada propia). Migración: si un inventario viejo no tiene
+//                 este campo, `loadInventories` lo normaliza a `[]`.
 
 const KEY_INVENTORIES = 'truck-packer-inventories';
 const KEY_ACTIVE = 'truck-packer-active-inventory-id';
@@ -34,7 +38,15 @@ export function loadInventories() {
     .filter(inv => inv && typeof inv.id === 'string'
                        && typeof inv.name === 'string'
                        && Array.isArray(inv.items))
-    .map(inv => ({ ...inv, items: inv.items.filter(isValidItem) }));
+    .map(inv => ({
+      ...inv,
+      items: inv.items.filter(isValidItem),
+      // Migración: inventarios viejos sin customColors → array vacío.
+      // Filtrado defensivo: si está pero no es array de strings, ignorar.
+      customColors: Array.isArray(inv.customColors)
+        ? inv.customColors.filter(c => typeof c === 'string')
+        : [],
+    }));
 }
 
 export function saveInventories(arr) {
@@ -56,7 +68,7 @@ export function setActiveInventoryId(id) {
 export function createInventory(name, items) {
   const list = loadInventories();
   const id = Date.now().toString() + '-' + Math.random().toString(36).slice(2, 6);
-  const inv = { id, name, items: items.map(it => ({ ...it })) };
+  const inv = { id, name, items: items.map(it => ({ ...it })), customColors: [] };
   list.push(inv);
   saveInventories(list);
   return inv;

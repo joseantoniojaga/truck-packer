@@ -190,14 +190,16 @@ describe('InventoryManagerModal — acciones', () => {
     expect(props.onClose).not.toHaveBeenCalled();
   });
 
-  it('"💾 Sobrescribir activo": actualiza items del activo y muestra flash', () => {
+  it('"💾 Guardar activo": actualiza items del activo y muestra flash', () => {
     vi.useFakeTimers();
     const invs = [{ id: 'a', name: 'Base', items: [sampleItem({ id: 1, name: 'viejo' })] }];
     saveInventories(invs);
     const currentItems = [sampleItem({ id: 1, name: 'nuevo', load: 3 })];
     mountModal({ inventories: invs, activeInventoryId: 'a', items: currentItems });
 
-    fireEvent.click(screen.getByText(/Sobrescribir/));
+    // El botón de sobreescritura ahora dice solo "Guardar". Scopeamos el
+    // click al botón con title específico para no chocar con otros "Guardar".
+    fireEvent.click(screen.getByTitle(/Reemplaza los items/));
 
     // Storage actualizado (sin load)
     const after = loadInventories()[0];

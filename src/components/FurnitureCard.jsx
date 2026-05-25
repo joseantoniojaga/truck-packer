@@ -118,7 +118,6 @@ export default function FurnitureCard({
           onTouchEnd={decHold.stop}
           disabled={cantDecrement}
           aria-label="Menos"
-          style={{ padding: "10px 14px" }}
         >
           <Minus size={16} />
         </button>
@@ -127,8 +126,9 @@ export default function FurnitureCard({
           background: "var(--bg-subtle)",
           borderLeft: "1px solid var(--border)",
           borderRight: "1px solid var(--border)",
-          padding: "10px 16px",
-          minWidth: 72,
+          padding: "0 10px",
+          width: 92,
+          flexShrink: 0,
           display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
         }}>
           <input
@@ -173,7 +173,6 @@ export default function FurnitureCard({
           onTouchEnd={incHold.stop}
           disabled={cantIncrement}
           aria-label="Más"
-          style={{ padding: "10px 14px" }}
         >
           <Plus size={16} />
         </button>

@@ -183,6 +183,27 @@ export default function App(){
     setInventories(loadInventories());
   },[activeInventoryId]);
 
+  // Colores custom del inventario activo. Derivado del array `inventories`
+  // (que sí está en el state de React) — así re-renderea al cambiar inventario.
+  const activeCustomColors = useMemo(()=>{
+    const inv = inventories.find(i=>i.id===activeInventoryId);
+    return Array.isArray(inv?.customColors) ? inv.customColors : [];
+  },[inventories,activeInventoryId]);
+
+  // Agrega un color custom al inventario activo y lo persiste. Lee la lista
+  // actual desde storage (no del closure) para que múltiples picks rápidos
+  // dedupeen correctamente sin esperar el re-render de React.
+  const handleAddCustomColor=useCallback((color)=>{
+    if(!activeInventoryId)return;
+    const lc=(color||'').toLowerCase();
+    const fresh=loadInventories();
+    const inv=fresh.find(x=>x.id===activeInventoryId);
+    const current=Array.isArray(inv?.customColors)?inv.customColors:[];
+    if(current.some(c=>c.toLowerCase()===lc))return;
+    updateInventory(activeInventoryId,{customColors:[...current,color]});
+    setInventories(loadInventories());
+  },[activeInventoryId]);
+
   // Guardar (nuevo o editado) un mueble custom.
   const handleFurnitureSave=useCallback((furniture)=>{
     const existing=items.find(x=>x.id===furniture.id);
@@ -405,6 +426,8 @@ export default function App(){
         existingFurniture={items}
         trailerVolume={TV}
         hidden={!!furnitureToDelete}
+        customColors={activeCustomColors}
+        onAddCustomColor={handleAddCustomColor}
       />
 
       {/* CONFIRM: borrar mueble custom */}

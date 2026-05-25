@@ -15,32 +15,6 @@ const PALETTE = [
   "#1F5E6B", "#42B0D5", "#E08A1F", "#B8A0D8",
 ];
 
-// Clave de localStorage para colores custom agregados por el usuario.
-// Persisten entre sesiones — cuando alguien usa el picker nativo y elige
-// un color que no está en PALETTE, se agrega al pool y se renderiza junto
-// al resto. El botón "+" se mueve a la siguiente posición disponible.
-const CUSTOM_COLORS_KEY = 'truckPackerCustomColors';
-
-function loadCustomColors() {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = window.localStorage.getItem(CUSTOM_COLORS_KEY);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed.filter(c => typeof c === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCustomColors(colors) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(colors));
-  } catch {
-    // ignorar QuotaExceededError u otras fallas de storage.
-  }
-}
 
 const inputStyle = {
   fontSize: "var(--text-sm)", padding: "6px 8px",
@@ -56,6 +30,9 @@ export default function FurnitureEditorModal({
   open, onClose, onSave, onDelete,
   initialFurniture, existingFurniture = [], trailerVolume,
   hidden = false,
+  // Colores custom del inventario activo (vienen como prop desde App.jsx).
+  // El callback agrega al pool del inventario y persiste a localStorage.
+  customColors = [], onAddCustomColor,
 }) {
   const isEdit = !!initialFurniture;
 
@@ -65,20 +42,16 @@ export default function FurnitureEditorModal({
   const [fondo, setFondo] = useState('');
   const [inv, setInv] = useState('');
   const [color, setColor] = useState(PALETTE[0]);
-  // Colores custom persistidos. Se cargan una vez (lazy initializer) y se
-  // sincronizan a localStorage cada vez que cambia el array.
-  const [customColors, setCustomColors] = useState(loadCustomColors);
-  useEffect(() => { saveCustomColors(customColors); }, [customColors]);
 
-  // Agrega un color al pool de custom si no existe ya (en PALETTE o en
-  // customColors). Devuelve true si lo agregó, false si era duplicado.
-  const addCustomColor = (raw) => {
+  // Notifica al padre cuando el usuario elige un color nuevo via el picker
+  // nativo. El padre decide si dedupea y lo agrega al inventario activo;
+  // este componente solo dispara el callback.
+  const handlePickedColor = (raw) => {
     const c = (raw || '').toLowerCase();
-    if (!/^#[0-9a-f]{6}$/.test(c)) return false;
+    if (!/^#[0-9a-f]{6}$/.test(c)) return;
     const all = [...PALETTE, ...customColors].map(x => x.toLowerCase());
-    if (all.includes(c)) return false;
-    setCustomColors(prev => [...prev, raw]);
-    return true;
+    if (all.includes(c)) return;
+    onAddCustomColor && onAddCustomColor(raw);
   };
 
   // Reset form cada vez que el modal abre o cambia el mueble inicial
@@ -285,8 +258,8 @@ export default function FurnitureEditorModal({
                   onChange={e => {
                     const v = e.target.value;
                     setColor(v);
-                    // Persistir como custom si no estaba ya en el pool.
-                    addCustomColor(v);
+                    // Notificar al padre para persistir (si es nuevo).
+                    handlePickedColor(v);
                   }}
                   aria-label="Color personalizado"
                   title="Color personalizado"
