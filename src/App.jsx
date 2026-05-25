@@ -9,6 +9,7 @@ import InventoryManagerModal from './components/InventoryManagerModal.jsx';
 import FurnitureEditorModal from './components/FurnitureEditorModal.jsx';
 import Viewer3D from './components/Viewer3D.jsx';
 import EmptyViewerState from './components/EmptyViewerState.jsx';
+import TrailerEditorModal from './components/TrailerEditorModal.jsx';
 import OV from './components/OrthoView.jsx';
 import { useTheme } from './hooks/useTheme.js';
 import { alpha } from './styles/util.js';
@@ -35,7 +36,9 @@ import {
   setActiveInventoryId as persistActiveInventoryId,
   createInventory,
   updateInventory,
+  updateInventoryTrailer,
   DEFAULT_INVENTORY_NAME,
+  DEFAULT_TRAILER,
 } from './inventoryStorage.js';
 
 // Bootstrap de inventarios: corre una sola vez en el primer render (se llama
@@ -63,8 +66,6 @@ function bootstrapInventories() {
   return { inventories: invs, activeId, items };
 }
 
-const TR = { largo:1615.4, ancho:247, alto:280, placas:"49-UT-7V" };
-const TV = TR.largo*TR.ancho*TR.alto;
 const MIN = 5;
 
 
@@ -105,6 +106,22 @@ export default function App(){
   const { theme, toggleTheme } = useTheme();
   const activeInventoryName = inventories.find(i => i.id === activeInventoryId)?.name || 'Inventario base';
 
+  // Dimensiones del tráiler — derivadas del inventario activo. Cuando el
+  // usuario edita las dims o cambia de inventario, `inventories` cambia y
+  // el useMemo reemplaza este objeto, lo cual a su vez invalida `TV` y
+  // dispara re-render de los componentes que dependen.
+  const trailer = useMemo(()=>{
+    const inv = inventories.find(i=>i.id===activeInventoryId);
+    return inv?.trailer || DEFAULT_TRAILER;
+  },[inventories,activeInventoryId]);
+  const TR = trailer;
+  const TV = useMemo(()=>trailer.largo*trailer.ancho*trailer.alto,[trailer]);
+
+  // Estado del modal de edición de tráiler.
+  const [trailerModalOpen,setTrailerModalOpen]=useState(false);
+  const [pendingTrailer,setPendingTrailer]=useState(null);
+  const [confirmEmptyOpen,setConfirmEmptyOpen]=useState(false);
+
   useEffect(()=>{
     document.body.style.background="var(--bg-base)";
     document.body.style.margin="0";
@@ -134,7 +151,7 @@ export default function App(){
     setItems(items.map(x=>x.id===id?{...x,load:x.load+1}:x));
     setPlaced([...placed,newItem]);
     setLastAppliedStrategyId(null);
-  },[items,placed,packMode]);
+  },[items,placed,packMode,TR]);
 
   const handleSwapConfirm=useCallback(()=>{
     if(!pendingAdd)return;
@@ -144,7 +161,7 @@ export default function App(){
     if(!itemToAdd)return;
     const opts=calculateSwapOptions(itemToAdd,items,placed,TR,packMode);
     setSwapOptions({itemName,itemId:id,options:opts});
-  },[pendingAdd,items,placed,packMode]);
+  },[pendingAdd,items,placed,packMode,TR]);
 
   // REMOVE: just remove the last placed item of this type, no repack
   const removeOne=useCallback((id)=>{
@@ -163,7 +180,7 @@ export default function App(){
   const doRepack=useCallback((newItems)=>{
     const{placed:p}=fullPack(newItems,TR,packMode);
     setItems(newItems);setPlaced(p);
-  },[packMode]);
+  },[packMode,TR]);
 
   // SET LOAD directly (input editing): clamp a [0, inv] y repack completo
   // porque cambiar load no es incremental.
@@ -292,6 +309,36 @@ export default function App(){
 
   const runStrat=(k)=>{setRunningStrategyId(k);setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setComp(false);setRunningStrategyId(null);setLastAppliedStrategyId(k);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
+
+  // Aplica el nuevo tráiler: persiste a storage, sincroniza React state, y
+  // si reduce y hay carga colocada, primero pide confirmación (en handleSaveTrailer).
+  const applyTrailer=useCallback((newTrailer,emptyLoad)=>{
+    if(emptyLoad){
+      setPlaced([]);
+      setItems(prev=>prev.map(it=>({...it,load:0})));
+      setLastAppliedStrategyId(null);
+    }
+    if(activeInventoryId){
+      updateInventoryTrailer(activeInventoryId,newTrailer);
+      setInventories(loadInventories());
+    }
+    setTrailerModalOpen(false);
+    setConfirmEmptyOpen(false);
+    setPendingTrailer(null);
+  },[activeInventoryId]);
+
+  const handleSaveTrailer=useCallback((newTrailer)=>{
+    const reduces =
+      newTrailer.largo < trailer.largo ||
+      newTrailer.ancho < trailer.ancho ||
+      newTrailer.alto  < trailer.alto;
+    if(reduces && placed.length>0){
+      setPendingTrailer(newTrailer);
+      setConfirmEmptyOpen(true);
+    } else {
+      applyTrailer(newTrailer,false);
+    }
+  },[trailer,placed.length,applyTrailer]);
 
   const B={borderRadius:"var(--radius-md)",border:`1px solid var(--border)`,background:"var(--bg-subtle)",cursor:"pointer",fontWeight:600};
 
@@ -446,14 +493,38 @@ export default function App(){
         onCancel={()=>setFurnitureToDelete(null)}
       />
 
+      {/* TRAILER EDITOR */}
+      <TrailerEditorModal
+        open={trailerModalOpen}
+        trailer={trailer}
+        hasPlacedItems={placed.length>0}
+        onSave={handleSaveTrailer}
+        onCancel={()=>setTrailerModalOpen(false)}
+      />
+
+      {/* CONFIRM: vaciar carga al reducir el tráiler. nested=true porque
+          se abre sobre el modal del tráiler (que sigue visible detrás). */}
+      <ConfirmModal
+        open={confirmEmptyOpen}
+        variant="danger"
+        title="Vaciar carga"
+        message="Las nuevas dimensiones son más pequeñas. Esto vaciará la carga actual. ¿Continuar?"
+        confirmLabel="Vaciar y aplicar"
+        cancelLabel="Cancelar"
+        onConfirm={()=>pendingTrailer && applyTrailer(pendingTrailer,true)}
+        onCancel={()=>{setConfirmEmptyOpen(false);setPendingTrailer(null);}}
+        nested={true}
+      />
+
       {/* ── TOPBAR Cargo Trust ── */}
       <Topbar
         inventoryName={activeInventoryName}
-        trailerPlate={TR.placas}
+        trailerPlate={trailer.placas}
         capacityText={fmtV(TV)}
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenInventories={()=>setShowInventoryManager(true)}
+        onEditTrailer={()=>setTrailerModalOpen(true)}
       />
 
       {/* ── DOS COLUMNAS ── */}

@@ -9,7 +9,7 @@ import { Truck, Sun, Moon, FolderOpen } from 'lucide-react';
 //   capacityText:  string  — volumen total ya formateado (e.g. "111.74 m³")
 //   theme:         'light' | 'dark'
 //   onToggleTheme: () => void
-export default function Topbar({ inventoryName, trailerPlate, capacityText, theme, onToggleTheme, onOpenInventories }) {
+export default function Topbar({ inventoryName, trailerPlate, capacityText, theme, onToggleTheme, onOpenInventories, onEditTrailer }) {
   return (
     <header
       style={{
@@ -50,7 +50,9 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
         </span>
       </div>
 
-      {/* Centro: info del inventario y tráiler */}
+      {/* Centro: info del inventario y, si tiene placa, también el tráiler.
+          Si placa está vacía/null se muestra solo el nombre del inventario
+          para no dejar "Tráiler" suelto sin valor. */}
       <div
         style={{
           flex: 1,
@@ -63,12 +65,18 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
           textOverflow: "ellipsis",
         }}
       >
-        {inventoryName} · Tráiler {trailerPlate}
+        {trailerPlate
+          ? `${inventoryName} · Tráiler ${trailerPlate}`
+          : inventoryName}
       </div>
 
-      {/* Derecha: pill de capacidad + toggle */}
+      {/* Derecha: pill de capacidad (clickable → editor de tráiler) + toggles */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        <div
+        <button
+          type="button"
+          onClick={onEditTrailer}
+          aria-label="Editar tráiler"
+          title="Editar tráiler"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -78,9 +86,15 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
             background: "var(--bg-subtle)",
             border: "1px solid var(--border)",
             borderRadius: 999,
+            cursor: "pointer",
+            font: "inherit",
+            transition: "background-color 150ms ease, border-color 150ms ease",
           }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--surface-hover)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "var(--bg-subtle)"; }}
         >
           <span
+            aria-hidden
             style={{
               width: 6,
               height: 6,
@@ -89,10 +103,10 @@ export default function Topbar({ inventoryName, trailerPlate, capacityText, them
               display: "inline-block",
             }}
           />
-          <span style={{ fontSize: "var(--text-sm)", color: "var(--text-primary)", fontWeight: 600 }}>
+          <span style={{ fontSize: "var(--text-sm)", color: "var(--text-primary)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
             {capacityText}
           </span>
-        </div>
+        </button>
 
         <button
           onClick={onOpenInventories}
