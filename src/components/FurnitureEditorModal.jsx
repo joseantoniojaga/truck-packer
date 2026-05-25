@@ -15,6 +15,33 @@ const PALETTE = [
   "#1F5E6B", "#42B0D5", "#E08A1F", "#B8A0D8",
 ];
 
+// Clave de localStorage para colores custom agregados por el usuario.
+// Persisten entre sesiones — cuando alguien usa el picker nativo y elige
+// un color que no está en PALETTE, se agrega al pool y se renderiza junto
+// al resto. El botón "+" se mueve a la siguiente posición disponible.
+const CUSTOM_COLORS_KEY = 'truckPackerCustomColors';
+
+function loadCustomColors() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = window.localStorage.getItem(CUSTOM_COLORS_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.filter(c => typeof c === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomColors(colors) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(colors));
+  } catch {
+    // ignorar QuotaExceededError u otras fallas de storage.
+  }
+}
+
 const inputStyle = {
   fontSize: "var(--text-sm)", padding: "6px 8px",
   background: "var(--bg-subtle)", border: `1px solid var(--border)`,
@@ -38,6 +65,21 @@ export default function FurnitureEditorModal({
   const [fondo, setFondo] = useState('');
   const [inv, setInv] = useState('');
   const [color, setColor] = useState(PALETTE[0]);
+  // Colores custom persistidos. Se cargan una vez (lazy initializer) y se
+  // sincronizan a localStorage cada vez que cambia el array.
+  const [customColors, setCustomColors] = useState(loadCustomColors);
+  useEffect(() => { saveCustomColors(customColors); }, [customColors]);
+
+  // Agrega un color al pool de custom si no existe ya (en PALETTE o en
+  // customColors). Devuelve true si lo agregó, false si era duplicado.
+  const addCustomColor = (raw) => {
+    const c = (raw || '').toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(c)) return false;
+    const all = [...PALETTE, ...customColors].map(x => x.toLowerCase());
+    if (all.includes(c)) return false;
+    setCustomColors(prev => [...prev, raw]);
+    return true;
+  };
 
   // Reset form cada vez que el modal abre o cambia el mueble inicial
   useEffect(() => {
@@ -176,21 +218,26 @@ export default function FurnitureEditorModal({
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ ...labelStyle, marginBottom: 10 }}>Color</label>
-        {/* Grid fijo de 10 columnas. Fila 1 = 10 colores, fila 2 = 4 colores
-            + botón "+" custom. El layout es estable independientemente del
-            ancho del modal mientras quepa la fila completa. */}
+        {/* Grid de 10 columnas fijas de 36px con `justify-content: space-between`.
+            Esto pega el primer color al borde izquierdo y el último (col 10) al
+            borde derecho, distribuyendo el espacio entre columnas uniformemente.
+            La fila 2 sigue las MISMAS columnas: items rellenan de izquierda a
+            derecha en cols 1..N, dejando vacías las restantes (no se spread). */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(10, 36px)",
-          gap: 12,
-          justifyContent: "start",
+          justifyContent: "space-between",
+          rowGap: 12,
+          columnGap: 0,
         }}>
-          {PALETTE.map(c => {
+          {[...PALETTE, ...customColors].map((c, idx) => {
             const isSelected = color.toLowerCase() === c.toLowerCase();
+            const isCustomSwatch = idx >= PALETTE.length;
             return (
               <button
-                key={c} type="button" onClick={() => setColor(c)}
-                aria-label={`Color ${c}`} title={c}
+                key={`${c}-${idx}`} type="button" onClick={() => setColor(c)}
+                aria-label={isCustomSwatch ? `Color personalizado ${c}` : `Color ${c}`}
+                title={c}
                 className="color-swatch"
                 style={{
                   width: 36, height: 36, borderRadius: "50%",
@@ -207,7 +254,8 @@ export default function FurnitureEditorModal({
               área visual del botón. El navegador ancla el picker nativo al
               elemento clickeado, así aparece exactamente sobre el botón. */}
           {(() => {
-            const isCustom = !PALETTE.some(c => c.toLowerCase() === color.toLowerCase());
+            const allKnown = [...PALETTE, ...customColors];
+            const isCustom = !allKnown.some(c => c.toLowerCase() === color.toLowerCase());
             return (
               <div style={{ position: "relative", width: 36, height: 36 }}>
                 {/* Capa visual — no captura eventos, el input los toma. */}
@@ -234,7 +282,12 @@ export default function FurnitureEditorModal({
                 <input
                   type="color"
                   value={color}
-                  onChange={e => setColor(e.target.value)}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setColor(v);
+                    // Persistir como custom si no estaba ya en el pool.
+                    addCustomColor(v);
+                  }}
                   aria-label="Color personalizado"
                   title="Color personalizado"
                   style={{

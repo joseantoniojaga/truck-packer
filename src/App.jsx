@@ -580,10 +580,19 @@ export default function App(){
               {placed.length===0 ? (
                 <EmptyViewerState totalInventory={tInv}/>
               ) : viewMode==="all" ? (
+                // Durante simulación, las 6 orthoviews deben mostrar el estado
+                // PARCIAL (items 0..simStep), no la carga final. OrthoView no
+                // entiende de simMode/simStep, así que pasamos la rebanada ya
+                // calculada como `placed`.
                 <div style={{display:"flex",flexWrap:"wrap",gap:8,width:"100%",alignSelf:"flex-start"}}>
-                  {["top","bottom","right","left","front","back"].map(vk=>(
-                    <OV key={vk} placed={placed} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
-                  ))}
+                  {(() => {
+                    const allPlaced = simMode
+                      ? simSequence.map(s=>s.item).slice(0, simStep)
+                      : placed;
+                    return ["top","bottom","right","left","front","back"].map(vk=>(
+                      <OV key={vk} placed={allPlaced} vk={vk} selId={selId} onSel={setSelId} trailer={TR}/>
+                    ));
+                  })()}
                 </div>
               ) : (
                 <div style={{width:"100%",height:"100%"}}>
