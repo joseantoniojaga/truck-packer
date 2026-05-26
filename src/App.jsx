@@ -320,6 +320,25 @@ export default function App(){
 
   useEffect(()=>{if(!simMode&&simPlayRef.current){clearInterval(simPlayRef.current);simPlayRef.current=null;}},[simMode]);
 
+  // Si cambia el inventario activo durante una simulación, hay que salir del
+  // modo simulación — la secuencia precomputada pertenece al inventario
+  // viejo. Sin esto, el visor quedaría mostrando muebles de otra carga.
+  // El eslint-disable es intencional: solo queremos disparar este efecto
+  // cuando cambia activeInventoryId, no cuando cambia simMode (eso lo cerraría
+  // apenas se activa).
+  useEffect(()=>{
+    if(!simMode) return;
+    setSimMode(false);
+    setSimStep(0);
+    setSimSequence([]);
+    setSimPlaying(false);
+    if(simPlayRef.current){
+      clearInterval(simPlayRef.current);
+      simPlayRef.current=null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[activeInventoryId]);
+
   // Reinicia el intervalo cuando cambia simSpeed mid-play (sin esto, el
   // dropdown solo afectaría a partir del próximo Play/Pause).
   useEffect(()=>{
@@ -870,65 +889,79 @@ export default function App(){
                 )}
               </div>
 
-              {/* Controles estilo ActionBar — centrados horizontalmente */}
-              <div style={{display:"flex",justifyContent:"center"}}>
+              {/* Fila de controles: cluster centrado de playback + dropdown de
+                  velocidad anclado a la derecha (no compite con el cluster). */}
               <div style={{
-                display:"inline-flex",
-                gap:4,
-                padding:6,
-                background:"var(--bg-subtle)",
-                border:"1px solid var(--border)",
-                borderRadius:"var(--radius-lg)",
+                position:"relative",
+                display:"flex",
+                alignItems:"center",
+                justifyContent:"center",
+                marginTop:12,
               }}>
-                <button
-                  type="button" className="action-btn action-btn--secondary"
-                  onClick={()=>setSimStep(0)}
-                  title="Primer paso" aria-label="Primer paso"
-                  style={{padding:"10px 14px"}}
-                >
-                  <SkipBack size={16} strokeWidth={2}/>
-                </button>
-                <button
-                  type="button" className="action-btn action-btn--secondary"
-                  onClick={()=>setSimStep(s=>Math.max(0,s-1))}
-                  title="Anterior" aria-label="Anterior"
-                  style={{padding:"10px 14px"}}
-                >
-                  <Rewind size={16} strokeWidth={2}/>
-                </button>
-                <button
-                  type="button"
-                  className={`action-btn ${simPlaying?"action-btn--secondary":"action-btn--primary"}`}
-                  onClick={simAutoPlay}
-                  title={simPlaying?"Pausar":"Auto-reproducir"}
-                  aria-label={simPlaying?"Pausar":"Auto-reproducir"}
-                  style={{padding:"10px 14px"}}
-                >
-                  {simPlaying
-                    ? <><Pause size={16} strokeWidth={2}/>Pausar</>
-                    : <><Play size={16} strokeWidth={2}/>Auto</>}
-                </button>
-                <button
-                  type="button" className="action-btn action-btn--secondary"
-                  onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))}
-                  title="Siguiente" aria-label="Siguiente"
-                  style={{padding:"10px 14px"}}
-                >
-                  <Play size={16} strokeWidth={2}/>
-                </button>
-                <button
-                  type="button" className="action-btn action-btn--secondary"
-                  onClick={()=>setSimStep(simSequence.length)}
-                  title="Último paso" aria-label="Último paso"
-                  style={{padding:"10px 14px"}}
-                >
-                  <SkipForward size={16} strokeWidth={2}/>
-                </button>
+                {/* Cluster mini-ActionBar con los 5 botones de playback */}
+                <div style={{
+                  display:"inline-flex",
+                  gap:4,
+                  padding:6,
+                  background:"var(--bg-subtle)",
+                  border:"1px solid var(--border)",
+                  borderRadius:"var(--radius-lg)",
+                }}>
+                  <button
+                    type="button" className="action-btn action-btn--secondary"
+                    onClick={()=>setSimStep(0)}
+                    title="Primer paso" aria-label="Primer paso"
+                    style={{padding:"10px 14px"}}
+                  >
+                    <SkipBack size={16} strokeWidth={2}/>
+                  </button>
+                  <button
+                    type="button" className="action-btn action-btn--secondary"
+                    onClick={()=>setSimStep(s=>Math.max(0,s-1))}
+                    title="Anterior" aria-label="Anterior"
+                    style={{padding:"10px 14px"}}
+                  >
+                    <Rewind size={16} strokeWidth={2}/>
+                  </button>
+                  <button
+                    type="button"
+                    className={`action-btn ${simPlaying?"action-btn--secondary":"action-btn--primary"}`}
+                    onClick={simAutoPlay}
+                    title={simPlaying?"Pausar":"Auto-reproducir"}
+                    aria-label={simPlaying?"Pausar":"Auto-reproducir"}
+                    style={{padding:"10px 14px"}}
+                  >
+                    {simPlaying
+                      ? <><Pause size={16} strokeWidth={2}/>Pausar</>
+                      : <><Play size={16} strokeWidth={2}/>Auto</>}
+                  </button>
+                  <button
+                    type="button" className="action-btn action-btn--secondary"
+                    onClick={()=>setSimStep(s=>Math.min(s+1,simSequence.length))}
+                    title="Siguiente" aria-label="Siguiente"
+                    style={{padding:"10px 14px"}}
+                  >
+                    <Play size={16} strokeWidth={2}/>
+                  </button>
+                  <button
+                    type="button" className="action-btn action-btn--secondary"
+                    onClick={()=>setSimStep(simSequence.length)}
+                    title="Último paso" aria-label="Último paso"
+                    style={{padding:"10px 14px"}}
+                  >
+                    <SkipForward size={16} strokeWidth={2}/>
+                  </button>
+                </div>
 
-                {/* Dropdown de velocidad. Abre HACIA ARRIBA porque el
-                    simulador vive en el fondo del visor (no hay espacio
-                    abajo). Backdrop invisible para cerrar al click afuera. */}
-                <div style={{ position: "relative" }}>
+                {/* Dropdown de velocidad — pegado a la derecha del contenedor,
+                    centrado verticalmente. Sigue abriendo HACIA ARRIBA porque
+                    el simulador vive en el fondo del visor. */}
+                <div style={{
+                  position:"absolute",
+                  right:0,
+                  top:"50%",
+                  transform:"translateY(-50%)",
+                }}>
                   <button
                     type="button"
                     onClick={()=>setSpeedDropdownOpen(o=>!o)}
@@ -952,8 +985,7 @@ export default function App(){
                         style={{
                           position:"absolute",
                           bottom:"calc(100% + 8px)",
-                          left:"50%",
-                          transform:"translateX(-50%)",
+                          right:0,
                           background:"var(--surface)",
                           border:"1px solid var(--border)",
                           borderRadius:"var(--radius-lg)",
@@ -998,7 +1030,6 @@ export default function App(){
                     </>
                   )}
                 </div>
-              </div>
               </div>
             </div>
           ) : (
