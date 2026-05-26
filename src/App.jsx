@@ -68,6 +68,16 @@ function bootstrapInventories() {
 
 const MIN = 5;
 
+// Velocidades del auto-play del simulador. `ms` es el delay del setInterval
+// (intervalo entre pasos). 1× = 800 ms es el ritmo original.
+const SIM_SPEED_OPTIONS = [
+  { value: 0.5, label: "0.5×", ms: 1600 },
+  { value: 1,   label: "1×",   ms: 800 },
+  { value: 2,   label: "2×",   ms: 400 },
+  { value: 4,   label: "4×",   ms: 200 },
+  { value: 8,   label: "8×",   ms: 100 },
+];
+
 
 // --- Three.js 3D Viewer ---
 export default function App(){
@@ -101,6 +111,8 @@ export default function App(){
   const [simStep,setSimStep]=useState(0);
   const [simSequence,setSimSequence]=useState([]);
   const [simPlaying,setSimPlaying]=useState(false);
+  const [simSpeed,setSimSpeed]=useState(1);
+  const [speedDropdownOpen,setSpeedDropdownOpen]=useState(false);
   const simPlayRef=useRef(null);
 
   const { theme, toggleTheme } = useTheme();
@@ -297,15 +309,30 @@ export default function App(){
   const simAutoPlay=()=>{
     if(simPlaying){clearInterval(simPlayRef.current);simPlayRef.current=null;setSimPlaying(false);return;}
     setSimPlaying(true);
+    const delay=SIM_SPEED_OPTIONS.find(o=>o.value===simSpeed)?.ms ?? 800;
     simPlayRef.current=setInterval(()=>{
       setSimStep(s=>{
         if(s>=simSequence.length){clearInterval(simPlayRef.current);simPlayRef.current=null;setSimPlaying(false);return s;}
         return s+1;
       });
-    },800);
+    },delay);
   };
 
   useEffect(()=>{if(!simMode&&simPlayRef.current){clearInterval(simPlayRef.current);simPlayRef.current=null;}},[simMode]);
+
+  // Reinicia el intervalo cuando cambia simSpeed mid-play (sin esto, el
+  // dropdown solo afectaría a partir del próximo Play/Pause).
+  useEffect(()=>{
+    if(!simPlaying || !simPlayRef.current) return;
+    clearInterval(simPlayRef.current);
+    const delay=SIM_SPEED_OPTIONS.find(o=>o.value===simSpeed)?.ms ?? 800;
+    simPlayRef.current=setInterval(()=>{
+      setSimStep(s=>{
+        if(s>=simSequence.length){clearInterval(simPlayRef.current);simPlayRef.current=null;setSimPlaying(false);return s;}
+        return s+1;
+      });
+    },delay);
+  },[simSpeed]);
 
   const runStrat=(k)=>{setRunningStrategyId(k);setComp(true);setTimeout(()=>{const r=quickStrat(k,items,TR,packMode);doRepack(r);setComp(false);setRunningStrategyId(null);setLastAppliedStrategyId(k);},50);};
   const handleStrat=(k)=>{if(placed.length>0){setPendingStrat(k);}else{runStrat(k);}};
@@ -378,33 +405,45 @@ export default function App(){
       </Modal>
 
       {/* MODE SWITCH CONFIRM */}
-      <Modal open={!!modeSwitchTarget} onClose={()=>setModeSwitchTarget(null)} title={iconTitle(AlertTriangle, "Cambiar modo de acomodo")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
-        <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?</p>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setItems(items.map(it=>({...it,load:0})));setPlaced([]);setPackMode(modeSwitchTarget);setModeSwitchTarget(null);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--warning)",borderColor:alpha('--warning', 27)}}>Sí, cambiar</button>
-          <button onClick={()=>setModeSwitchTarget(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
-        </div>
-      </Modal>
+      <ConfirmModal
+        open={!!modeSwitchTarget}
+        title="Cambiar modo de empaquetado"
+        message="Cambiar de modo eliminará todos los muebles colocados. ¿Continuar?"
+        confirmLabel="Sí, cambiar"
+        cancelLabel="Cancelar"
+        variant="default"
+        onConfirm={()=>{
+          setItems(items.map(it=>({...it,load:0})));
+          setPlaced([]);
+          setPackMode(modeSwitchTarget);
+          setModeSwitchTarget(null);
+        }}
+        onCancel={()=>setModeSwitchTarget(null)}
+      />
 
       {/* STRATEGY CONFIRM */}
-      <Modal open={!!pendingStrat} onClose={()=>setPendingStrat(null)} title={iconTitle(Sparkles, "Aplicar estrategia")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
-        <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reorganizará todos los muebles colocados. ¿Continuar?</p>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{const k=pendingStrat;setPendingStrat(null);runStrat(k);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
-          <button onClick={()=>setPendingStrat(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
-        </div>
-      </Modal>
+      <ConfirmModal
+        open={!!pendingStrat}
+        title="Aplicar estrategia"
+        message="Esto reorganizará todos los muebles colocados. ¿Continuar?"
+        confirmLabel="Sí, reorganizar"
+        cancelLabel="Cancelar"
+        variant="default"
+        onConfirm={()=>{ const k=pendingStrat; setPendingStrat(null); runStrat(k); }}
+        onCancel={()=>setPendingStrat(null)}
+      />
 
       {/* REORGANIZE ADD CONFIRM */}
-      <Modal open={!!pendingAdd} onClose={()=>setPendingAdd(null)} title={iconTitle(RotateCcw, "Reorganizar carga")} titleColor={"var(--warning)"} accentColor={alpha('--warning', 27)}>
-        {pendingAdd&&(<>
-          <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No hay espacio disponible para <b style={{color:"var(--primary)"}}>{pendingAdd.itemName}</b>. ¿Reorganizar todos los muebles para intentar que quepa?</p>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={handleSwapConfirm} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
-            <button onClick={()=>setPendingAdd(null)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>No, dejarlo así</button>
-          </div>
-        </>)}
-      </Modal>
+      <ConfirmModal
+        open={!!pendingAdd}
+        title="Reorganizar carga"
+        message={pendingAdd ? `No hay espacio disponible para ${pendingAdd.itemName}. ¿Reorganizar todos los muebles para intentar que quepa?` : ""}
+        confirmLabel="Sí, reorganizar"
+        cancelLabel="No, dejarlo así"
+        variant="default"
+        onConfirm={handleSwapConfirm}
+        onCancel={()=>setPendingAdd(null)}
+      />
 
       {/* SWAP OPTIONS */}
       <Modal
@@ -418,17 +457,39 @@ export default function App(){
         {swapOptions&&(swapOptions.options.length===0?(
           <>
             <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>No se encontró ningún intercambio posible para <b style={{color:"var(--primary)"}}>{swapOptions.itemName}</b>.</p>
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Entendido</button>
+            <button
+              type="button"
+              onClick={()=>setSwapOptions(null)}
+              className="action-btn action-btn--secondary"
+              style={{ width:"100%", padding:"8px 14px", fontSize:"var(--text-sm)" }}
+            >
+              Entendido
+            </button>
           </>
         ):(
           <>
             <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 12px"}}>Para agregar 1 <b style={{color:"var(--primary)"}}>{swapOptions.itemName}</b>, elige una opción:</p>
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12,maxHeight:260,overflowY:"auto"}}>
               {swapOptions.options.map((opt,i)=>(
-                <button key={i} onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);setLastAppliedStrategyId(null);}} style={{...B,display:"flex",alignItems:"center",gap:10,padding:"10px 12px",textAlign:"left",border:`1px solid var(--border)`,borderRadius:"var(--radius-md)",cursor:"pointer",width:"100%"}}>
+                <button
+                  key={i}
+                  type="button"
+                  onClick={()=>{setItems(opt.newItems);setPlaced(opt.newPlaced);setSwapOptions(null);setLastAppliedStrategyId(null);}}
+                  style={{
+                    display:"flex", alignItems:"center", gap:10,
+                    padding:"10px 12px", textAlign:"left",
+                    border:"1px solid var(--border)",
+                    borderRadius:"var(--radius-md)",
+                    cursor:"pointer", width:"100%",
+                    background:"var(--surface)",
+                    transition:"background 0.15s",
+                  }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background = "var(--bg-subtle)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background = "var(--surface)"; }}
+                >
                   <div style={{width:12,height:12,borderRadius:2,background:opt.removeColor,flexShrink:0}}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:"var(--text-xs)",fontWeight:600,color:"var(--text-primary)"}}>Quitar {opt.removeCount} {opt.removeName}</div>
+                    <div style={{fontSize:"var(--text-sm)",fontWeight:600,color:"var(--text-primary)"}}>Quitar {opt.removeCount} {opt.removeName}</div>
                     <div style={{fontSize:"var(--text-xs)",color:"var(--text-tertiary)",marginTop:2}}>
                       Libera {fmtV(opt.removeTotalVol)} de espacio
                     </div>
@@ -436,19 +497,29 @@ export default function App(){
                 </button>
               ))}
             </div>
-            <button onClick={()=>setSwapOptions(null)} style={{...B,width:"100%",padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
+            <button
+              type="button"
+              onClick={()=>setSwapOptions(null)}
+              className="action-btn action-btn--secondary"
+              style={{ width:"100%", padding:"8px 14px", fontSize:"var(--text-sm)" }}
+            >
+              Cancelar
+            </button>
           </>
         ))}
       </Modal>
 
       {/* REORG CONFIRM */}
-      <Modal open={showReorgConfirm} onClose={()=>setShowReorgConfirm(false)} title={iconTitle(RotateCcw, "Reorganizar carga")} titleColor={"var(--primary)"} accentColor={alpha('--primary', 27)}>
-        <p style={{fontSize:"var(--text-sm)",color:"var(--text-secondary)",lineHeight:1.5,margin:"0 0 14px"}}>Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?</p>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{setShowReorgConfirm(false);doRepack(items);setLastAppliedStrategyId(null);}} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--primary)",borderColor:alpha('--primary', 27)}}>Sí, reorganizar</button>
-          <button onClick={()=>setShowReorgConfirm(false)} style={{...B,flex:1,padding:"8px",fontSize:"var(--text-xs)",color:"var(--success)",borderColor:alpha('--success', 27)}}>Cancelar</button>
-        </div>
-      </Modal>
+      <ConfirmModal
+        open={showReorgConfirm}
+        title="Reorganizar carga"
+        message="Esto reacomodará todos los muebles para optimizar el espacio. ¿Continuar?"
+        confirmLabel="Sí, reorganizar"
+        cancelLabel="Cancelar"
+        variant="default"
+        onConfirm={()=>{ setShowReorgConfirm(false); doRepack(items); setLastAppliedStrategyId(null); }}
+        onCancel={()=>setShowReorgConfirm(false)}
+      />
 
       {/* INVENTORY MANAGER */}
       <InventoryManagerModal
@@ -853,6 +924,80 @@ export default function App(){
                 >
                   <SkipForward size={16} strokeWidth={2}/>
                 </button>
+
+                {/* Dropdown de velocidad. Abre HACIA ARRIBA porque el
+                    simulador vive en el fondo del visor (no hay espacio
+                    abajo). Backdrop invisible para cerrar al click afuera. */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    onClick={()=>setSpeedDropdownOpen(o=>!o)}
+                    className={`action-btn ${speedDropdownOpen?"action-btn--open":"action-btn--secondary"}`}
+                    style={{ minWidth:60, padding:"10px 14px", fontSize:"var(--text-sm)", fontVariantNumeric:"tabular-nums" }}
+                    aria-label="Velocidad de simulación"
+                    title="Velocidad"
+                    aria-haspopup="menu"
+                    aria-expanded={speedDropdownOpen}
+                  >
+                    {SIM_SPEED_OPTIONS.find(o=>o.value===simSpeed)?.label}
+                  </button>
+                  {speedDropdownOpen && (
+                    <>
+                      <div
+                        onClick={()=>setSpeedDropdownOpen(false)}
+                        style={{ position:"fixed", inset:0, zIndex:49 }}
+                      />
+                      <div
+                        role="menu"
+                        style={{
+                          position:"absolute",
+                          bottom:"calc(100% + 8px)",
+                          left:"50%",
+                          transform:"translateX(-50%)",
+                          background:"var(--surface)",
+                          border:"1px solid var(--border)",
+                          borderRadius:"var(--radius-lg)",
+                          boxShadow:"var(--shadow-md)",
+                          padding:6,
+                          minWidth:100,
+                          display:"flex",
+                          flexDirection:"column",
+                          gap:2,
+                          zIndex:50,
+                        }}
+                      >
+                        {SIM_SPEED_OPTIONS.map(opt=>{
+                          const isActive = opt.value === simSpeed;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              role="menuitem"
+                              onClick={()=>{ setSimSpeed(opt.value); setSpeedDropdownOpen(false); }}
+                              style={{
+                                padding:"8px 12px",
+                                background: isActive ? "var(--bg-subtle)" : "transparent",
+                                color: isActive ? "var(--primary)" : "var(--text-primary)",
+                                fontWeight: isActive ? 600 : 500,
+                                border:"none",
+                                borderRadius:"var(--radius-md)",
+                                cursor:"pointer",
+                                fontSize:"var(--text-sm)",
+                                textAlign:"center",
+                                fontVariantNumeric:"tabular-nums",
+                                transition:"background 0.15s",
+                              }}
+                              onMouseEnter={e=>{ if(!isActive) e.currentTarget.style.background="var(--bg-subtle)"; }}
+                              onMouseLeave={e=>{ if(!isActive) e.currentTarget.style.background="transparent"; }}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               </div>
             </div>
